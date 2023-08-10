@@ -12,13 +12,13 @@ import { MetaMaskConnector } from 'wagmi/connectors/metaMask'
 
 const { chains, publicClient, webSocketPublicClient } = configureChains(
   [
-    goerli,
-    ...(process.env.NODE_ENV === 'development' ? [goerli, foundry] : []),
+    goerli
   ],
   [
-    alchemyProvider({ apiKey: process.env.ALCHEMY_API_KEY! }),
+    alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY! }),
     publicProvider(),
   ],
+  { pollingInterval: 15_000 },
 )
 
 export const config = createConfig({

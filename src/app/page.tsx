@@ -2,7 +2,9 @@ import { Account } from '../components/Account'
 import { Balance } from '../components/Balance'
 import { Connect } from '../components/Connect'
 import { Connected } from '../components/Connected'
+import { Deposit } from '../components/Deposit'
 import { NetworkSwitcher } from '../components/NetworkSwitcher'
+import { PoolUserBalance } from '../components/PoolUserBalance'
 
 export function Page() {
   return (
@@ -23,6 +25,14 @@ export function Page() {
         <hr />
         <h2>Balance</h2>
         <Balance />
+        <br />
+        <hr />
+        <h2>Deposit ETH</h2>
+        <Deposit />
+        <br />
+        <hr />
+        <h2>View Stake Balance</h2>
+        <PoolUserBalance />
         <br />
         <hr />
       </Connected>
