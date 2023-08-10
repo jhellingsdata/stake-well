@@ -1,8 +1,11 @@
 [profile.default]
+remappings = ["@openzeppelin=contracts/lib/openzeppelin-contracts/"]
 src = 'contracts/src'
 test = 'contracts/test'
 out = 'contracts/out'
-libs = ['contracts/lib']
-solc = '0.8.13'
+libs = ['contracts/lib', 'contracts/lib/openzeppelin-contracts/contracts']
+cache_path = 'contracts/cache'
+solc = '0.8.20'
+auto_detect_remappings = true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
