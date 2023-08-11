@@ -45,10 +45,10 @@ contract StakePool {
     ///////////////////
     // State Variables
     ///////////////////
-    IERC20 public stETH;
-
-    uint256 public userDepositsTotal;
-    uint256 public stakingRewardsTotal;
+    IERC20 private immutable i_stETH;
+    address private immutable i_owner;
+    uint256 public s_totalUserDeposits;
+    uint256 public s_stakingRewardsTotal;
 
     /// @dev Mapping of user address to their deposit amount (in stETH)
     mapping(address user => uint256 amount) private s_userDeposit;
@@ -72,7 +72,8 @@ contract StakePool {
     // Functions
     ///////////////////
     constructor(address _stETH) {
-        stETH = IERC20(_stETH);
+        i_owner = msg.sender;
+        i_stETH = IERC20(_stETH);
     }
 
     ///////////////////
@@ -80,15 +81,15 @@ contract StakePool {
     ///////////////////
     function depositEth() external payable returns (bool) {
         // Save stETH contract balance before deposit
-        uint256 oldBalance = stETH.balanceOf(address(this));
+        uint256 oldBalance = i_stETH.balanceOf(address(this));
 
         // TODO: Write the logic to deposit ETH and convert it to stETH
         if (msg.value == 0) revert StakePool__NeedsMoreThanZero();
-        (bool success,) = address(stETH).call{value: msg.value}("");
+        (bool success,) = address(i_stETH).call{value: msg.value}("");
         if (!success) revert StakePool__MintFailed();
 
         // Check the contract's stETH balance after the deposit
-        uint256 newBalance = stETH.balanceOf(address(this));
+        uint256 newBalance = i_stETH.balanceOf(address(this));
 
         // Calculate the amount of stETH minted
         uint256 mintedStETH = newBalance - oldBalance;
@@ -97,29 +98,29 @@ contract StakePool {
         s_userDeposit[msg.sender] += mintedStETH;
 
         // Update total user deposits
-        userDepositsTotal += mintedStETH;
+        s_totalUserDeposits += mintedStETH;
 
         // Update total staking rewards
-        stakingRewardsTotal = totalBalance() - userDepositsTotal;
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
 
         return success;
     }
 
     /* @param amountStEth: Amount of stETH to deposit to pool*/
     function depositStEth(uint256 amountStEth) external moreThanZero(amountStEth) {
-        uint256 oldBalance = stETH.balanceOf(address(this));
+        uint256 oldBalance = i_stETH.balanceOf(address(this));
 
         s_userDeposit[msg.sender] += amountStEth;
         emit StakeDeposited(msg.sender, amountStEth);
-        bool success = IERC20(stETH).transferFrom(msg.sender, address(this), amountStEth);
+        bool success = IERC20(i_stETH).transferFrom(msg.sender, address(this), amountStEth);
         if (!success) revert StakePool__TransferFailed();
 
         // Update contract balance records after the deposit
-        uint256 newBalance = stETH.balanceOf(address(this));
+        uint256 newBalance = i_stETH.balanceOf(address(this));
         uint256 mintedStETH = newBalance - oldBalance;
         s_userDeposit[msg.sender] += mintedStETH;
-        userDepositsTotal += mintedStETH;
-        stakingRewardsTotal = totalBalance() - userDepositsTotal;
+        s_totalUserDeposits += mintedStETH;
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
     }
 
     function withdrawEth(uint256 amount) external {
@@ -134,16 +135,16 @@ contract StakePool {
         }
 
         // Transfer stETH from this contract to the user
-        stETH.transfer(msg.sender, amount);
+        i_stETH.transfer(msg.sender, amount);
 
         // Update the user's deposited balance
         s_userDeposit[msg.sender] -= amount;
 
         // Update total user deposits
-        userDepositsTotal -= amount;
+        s_totalUserDeposits -= amount;
 
         // Update total staking rewards
-        stakingRewardsTotal = totalBalance() - userDepositsTotal;
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
     }
 
     ///////////////////
@@ -152,11 +153,16 @@ contract StakePool {
 
     /* Return total stETH contract balance */
     function totalBalance() public view returns (uint256) {
-        return stETH.balanceOf(address(this));
+        return i_stETH.balanceOf(address(this));
     }
 
     /* Return user's stETH contract balance */
     function balanceOf(address user) public view returns (uint256) {
         return s_userDeposit[user];
+    }
+
+    /* Return value of total user deposits (i.e. exactly equals cumulative sum of user deposits, excludes subsequent stETH rebases) */
+    function totalUserDeposits() public view returns (uint256) {
+        return s_totalUserDeposits;
     }
 }
