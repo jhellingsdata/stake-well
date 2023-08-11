@@ -107,10 +107,19 @@ contract StakePool {
 
     /* @param amountStEth: Amount of stETH to deposit to pool*/
     function depositStEth(uint256 amountStEth) external moreThanZero(amountStEth) {
+        uint256 oldBalance = stETH.balanceOf(address(this));
+
         s_userDeposit[msg.sender] += amountStEth;
         emit StakeDeposited(msg.sender, amountStEth);
         bool success = IERC20(stETH).transferFrom(msg.sender, address(this), amountStEth);
         if (!success) revert StakePool__TransferFailed();
+
+        // Update contract balance records after the deposit
+        uint256 newBalance = stETH.balanceOf(address(this));
+        uint256 mintedStETH = newBalance - oldBalance;
+        s_userDeposit[msg.sender] += mintedStETH;
+        userDepositsTotal += mintedStETH;
+        stakingRewardsTotal = totalBalance() - userDepositsTotal;
     }
 
     function withdrawEth(uint256 amount) external {
