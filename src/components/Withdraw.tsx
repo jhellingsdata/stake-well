@@ -1,16 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { parseEther, BaseError } from 'viem'
+import { parseEther, BaseError, formatEther } from 'viem'
 import { usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
-import { useDebounce } from '../hooks/useDebounce'
 import { useStakePoolWithdrawStEth, usePrepareStakePoolWithdrawStEth } from '../generated'
 import { type Address, useBalance, useAccount } from 'wagmi'
-import { PoolUserBalance } from './PoolUserBalance'
 
-import { stringify } from '../utils/stringify'
-
+/* Custom Components */
 import { ValidateInput } from './ValidateInput';
+
+/* Hooks */
+import { useDebounce } from '../hooks/useDebounce'
+import usePoolUserBalance from '../hooks/usePoolUserBalance';
+/* Utils */
+
+
 
 export function Withdraw() {
     return (
@@ -22,7 +26,7 @@ export function Withdraw() {
 
 function WithdrawStEth() {
     // // get user's stETH balance in pool 
-    // const contractBalance = <PoolUserBalance />
+    const { balance } = usePoolUserBalance()
 
     const { address } = useAccount()
     const { data: userBalance, isLoading: isUserBalanceLoading } = useBalance({
@@ -39,9 +43,9 @@ function WithdrawStEth() {
         setIsValid(newIsValid);
     }
 
-    // const handleMaxClick = () => {
-    //     setValue(contractBalance); // Set the input value to the maximum available stETH balance
-    // };
+    const handleMaxClick = () => {
+        setValue(balance ? formatEther(balance) : '0') // Convert BigInt to string, adjust as needed
+    }
 
     const { config } = usePrepareStakePoolWithdrawStEth({
         args: [debouncedValue ? parseEther(debouncedValue) : BigInt(0)],
@@ -66,6 +70,7 @@ function WithdrawStEth() {
                     placeholder="stETH amount"
                     value={value}
                 />
+                <button onClick={handleMaxClick}>Max</button>
                 <button disabled={!write && !isValid} type="submit">Withdraw</button>
             </form>
             {isLoading && <div>Check wallet...</div>}
