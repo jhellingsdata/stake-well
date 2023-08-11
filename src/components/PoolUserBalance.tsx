@@ -1,12 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { formatEther, BaseError } from 'viem'
 import { type Address } from 'wagmi'
-import { useDebounce } from '../hooks/useDebounce'
-import { useStakePoolDepositEth, usePrepareStakePoolDepositEth, useStakePoolBalanceOf } from '../generated'
-
-import { stringify } from '../utils/stringify'
+import { useStakePoolBalanceOf } from '../generated'
 
 import { useAccount } from 'wagmi'
 
@@ -14,15 +10,19 @@ interface PoolUserBalanceProps {
     decimals?: number;
 }
 
-export const PoolUserBalance = () => {
+export const PoolUserBalance: React.FC<PoolUserBalanceProps> = ({ decimals = 18 }) => {
     return (
         <div>
-            <ViewUserBalance />
+            <ViewUserBalance decimals={decimals} />
         </div>
     )
 }
 
-function ViewUserBalance() {
+interface ViewUserBalanceProps {
+    decimals: number;
+}
+
+function ViewUserBalance({ decimals }: ViewUserBalanceProps) {
     const { address } = useAccount()
 
     const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useStakePoolBalanceOf({
@@ -30,9 +30,14 @@ function ViewUserBalance() {
         enabled: Boolean(address),
     })
 
+    const formatBalance = (balance: bigint) => {
+        let etherString = formatEther(balance);
+        return parseFloat(etherString).toFixed(decimals);
+    }
+
     return (
         <div>
-            stETH balance: {isSuccess && data ? formatEther(data) : 'Loading...'}
+            stETH balance: {isSuccess && data ? formatBalance(data) : 'Loading...'}
             <button onClick={() => refetch()}>
                 {isLoading ? 'fetching...' : 'fetch'}
             </button>
