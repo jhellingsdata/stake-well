@@ -23,8 +23,15 @@ function TotalBalance({ decimals }: TotalBalanceProps) {
     const { data, error, isLoading, isSuccess, refetch } = useStakePoolTotalBalance()
 
     const formatBalance = (balance: bigint) => {
-        let etherString = formatEther(balance);
-        return parseFloat(etherString).toFixed(decimals);
+        let etherString = balance.toString();
+        if (etherString.length <= decimals) {
+            return '0.' + etherString.padStart(decimals, '0');
+        }
+        return (
+            etherString.slice(0, -decimals) +
+            '.' +
+            etherString.slice(-decimals).slice(0, decimals)
+        )
     }
 
     console.log(data)
