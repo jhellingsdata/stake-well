@@ -12,7 +12,7 @@ export function Balance() {
             </div>
             <br />
             <div>
-                <FindBalance />
+                <AccountTokenBalance />
             </div>
         </>
     )
@@ -28,11 +28,31 @@ export function AccountBalance() {
     return (
         <div>
             {data?.formatted}
+            {' '}
             {data?.symbol}
             <button onClick={() => refetch()}>refetch</button>
         </div>
     )
 }
+
+export function AccountTokenBalance() {
+    const { address } = useAccount()
+    const { data, refetch } = useBalance({
+        address,
+        watch: true,
+        token: '0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F',    // Goerli testnet stETH token
+    })
+
+    return (
+        <div>
+            {data?.formatted}
+            {' '}
+            {data?.symbol}
+            <button onClick={() => refetch()}>refetch</button>
+        </div>
+    )
+}
+
 
 export function FindBalance() {
     const [address, setAddress] = useState('')
