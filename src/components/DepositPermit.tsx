@@ -1,7 +1,7 @@
 'use client'
 
 import React, { use, useState, useEffect } from 'react';
-import { recoverTypedDataAddress } from 'viem'
+import { recoverTypedDataAddress, BaseError } from 'viem'
 import { type Address, useAccount, useContractRead, useSignTypedData, useWaitForTransaction } from 'wagmi';
 import { useIerc20PermitNonces, ierc20PermitABI, stakePoolAddress, usePrepareStakePoolDepositStEthWithPermit, useStakePoolDepositStEthWithPermit } from '../generated';
 import { useDebounce } from '../hooks/useDebounce';
@@ -14,7 +14,7 @@ interface DepositPermitProps {
     permitDeadline?: number;
 }
 
-export const DepositPermit: React.FC<DepositPermitProps> = ({ permitDeadline = -1 }) => {
+export const DepositPermit: React.FC<DepositPermitProps> = ({ permitDeadline = Math.floor(Date.now() / 1000) + 3600 }) => {
     return (
         <div>
             <DepositStEthWithPermit permitDeadline={permitDeadline} />
@@ -47,6 +47,11 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
     const [signature, setSignature] = useState<string | null>(null)
 
     const debouncedValue = useDebounce(value);
+
+    // State Management: manage the status of deposit interaction.
+    // This will help us control the behavior and text of the single button.
+    const [interactionStatus, setInteractionStatus] = useState('pending');
+
 
     // const deadline = Math.floor(Date.now() / 1000) + 3600   // Valid for one hour
     const deadline = permitDeadline
@@ -119,6 +124,7 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
         onSuccess(data) {
             console.log('Success: ', data)
             setSignature(data)
+            setInteractionStatus('signed')
         },
     })
 
@@ -138,10 +144,12 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
             })()
     }, [sig])
 
+
     // const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useIerc20PermitNonces({
     //     args: [address as Address],
     //     enabled: Boolean(address),
     // })
+
 
     let v, r, s;
     if (signature) {
@@ -165,15 +173,8 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
         enabled: Boolean(signature)
     })
 
-    const { write, data: depositPermitData, isError: depositPermitIsError } = useStakePoolDepositStEthWithPermit(config)
+    const { write, data: depositPermitData, error: depositPermitError, isError: isDepositPermitError } = useStakePoolDepositStEthWithPermit(config)
 
-    // const { config } = usePrepareStakePoolDepositEth({
-    //     value: debouncedValue ? parseEther(debouncedValue) : BigInt(0),
-    //     enabled: Boolean(debouncedValue),
-    // })
-
-    // const { write, data, error, isLoading, isError } =
-    //     useStakePoolDepositEth(config)
 
     const {
         data: receipt,
@@ -181,20 +182,42 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
         isSuccess: isDepositSuccess,
     } = useWaitForTransaction({ hash: depositPermitData?.hash })
 
+    const handleDeposit = async () => {
+        await write?.()
+        setInteractionStatus('done')
+    }
+
+    let buttonText, buttonAction
+    const noop = () => { } // A no-op function that does nothing
+    switch (interactionStatus) {
+        case 'pending':
+            buttonText = 'Sign'
+            buttonAction = signTypedData
+            break
+        case 'signed':
+            buttonText = 'Deposit'
+            buttonAction = handleDeposit
+            break
+        default:
+            buttonText = 'Done'
+            buttonAction = noop
+    }
+
+
     return (
+
         <>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault()
-                }}
-            >
+            <form onSubmit={(e) => e.preventDefault()}>
                 <ValidateInput
                     onChange={handleInputChange}
                     placeholder="stETH amount"
                     value={value}
                 />
-                <button disabled={isLoading} onClick={() => signTypedData()}>
-                    {isLoading ? 'Check Wallet' : 'Sign Message'}
+                <button
+                    disabled={!isValid || interactionStatus === 'done'}
+                    onClick={buttonAction}
+                >
+                    {buttonText}
                 </button>
                 {sig && (
                     <div>
@@ -204,23 +227,43 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
                 )}
                 {sigError && <div>Error: {sigError?.message}</div>}
             </form>
-
-            <button disabled={!isValid && !signature} onClick={() => write?.()}>Deposit</button>
-            {/* <form
-                onSubmit={(e) => {
-                    e.preventDefault()
-                    write?.()
-                }}
-            >
-                Deposit ETH:{' '}
-                <ValidateInput
-                    onChange={handleInputChange}
-                    placeholder="ETH amount"
-                    value={value}
-                />
-                <button disabled={!write && !isValid} type="submit">Send</button>
-            </form> */}
+            {isLoading && <div>Check wallet...</div>}
+            {isPending && <div>Transaction pending...</div>}
+            {isDepositSuccess && (
+                <>
+                    <div>Transaction Hash: {depositPermitData?.hash}</div>
+                    {/* <div>
+                        Transaction Receipt: <pre>{stringify(receipt, null, 2)}</pre>
+                    </div> */}
+                </>
+            )}
+            {isDepositPermitError && <div>{(depositPermitError as BaseError)?.shortMessage}</div>}
         </>
+        // <>
+        //     <form
+        //         onSubmit={(e) => {
+        //             e.preventDefault()
+        //         }}
+        //     >
+        //         <ValidateInput
+        //             onChange={handleInputChange}
+        //             placeholder="stETH amount"
+        //             value={value}
+        //         />
+        //         <button disabled={isLoading} onClick={() => signTypedData()}>
+        //             {isLoading ? 'Check Wallet' : 'Sign Message'}
+        //         </button>
+        //         {sig && (
+        //             <div>
+        //                 <div>Signature: {sig}</div>
+        //                 <div>Recovered address {recoveredAddress}</div>
+        //             </div>
+        //         )}
+        //         {sigError && <div>Error: {sigError?.message}</div>}
+        //     </form>
+
+        //     <button disabled={!isValid && !signature} onClick={() => write?.()}>Deposit</button>
+        // </>
     );
 }
 
