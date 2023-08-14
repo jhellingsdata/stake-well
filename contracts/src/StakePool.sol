@@ -23,7 +23,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import "./IERC20Permit.sol";
 
 // Contract should only hold stETH, but users should be able to deposit ETH or stETH.
 // If a user deposits ETH, the contract should convert it to stETH by calling Lido's stETH contract.
@@ -41,11 +43,12 @@ contract StakePool {
     error StakePool__NeedsMoreThanZero();
     error StakePool__InsufficientStETHBalance();
     error StakePool__TransferFailed();
+    error StakePool__WithdrawalFailed();
 
     ///////////////////
     // State Variables
     ///////////////////
-    IERC20 private immutable i_stETH;
+    IERC20Permit public immutable i_stETH;
     address private immutable i_owner;
     uint256 public s_totalUserDeposits;
     uint256 public s_stakingRewardsTotal;
@@ -57,6 +60,9 @@ contract StakePool {
     // Events
     ///////////////////
     event StakeDeposited(address indexed user, uint256 indexed amount);
+    event MintAndStakeDeposited(address indexed user, uint256 indexed amount);
+    event StakeDepositedWithPermit(address indexed user, uint256 indexed amount);
+    event StakeWithdrawn(address indexed user, uint256 indexed amount);
 
     ///////////////////
     // Modifiers
@@ -73,18 +79,22 @@ contract StakePool {
     ///////////////////
     constructor(address _stETH) {
         i_owner = msg.sender;
-        i_stETH = IERC20(_stETH);
+        i_stETH = IERC20Permit(_stETH);
     }
 
     ///////////////////
     // External Functions
     ///////////////////
-    function depositEth() external payable returns (bool) {
+    /*
+    * @notice Likely need to add reentrancy guard, can't follow checks-effects-interactions pattern
+    */
+    function depositEth() external payable moreThanZero(msg.value) {
+        // Update truthful staking rewards total
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+
         // Save stETH contract balance before deposit
         uint256 oldBalance = i_stETH.balanceOf(address(this));
 
-        // TODO: Write the logic to deposit ETH and convert it to stETH
-        if (msg.value == 0) revert StakePool__NeedsMoreThanZero();
         (bool success,) = address(i_stETH).call{value: msg.value}("");
         if (!success) revert StakePool__MintFailed();
 
@@ -99,52 +109,65 @@ contract StakePool {
 
         // Update total user deposits
         s_totalUserDeposits += mintedStETH;
-
-        // Update total staking rewards
-        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
-
-        return success;
     }
 
     /* @param amountStEth: Amount of stETH to deposit to pool*/
     function depositStEth(uint256 amountStEth) external moreThanZero(amountStEth) {
-        uint256 oldBalance = i_stETH.balanceOf(address(this));
-
-        s_userDeposit[msg.sender] += amountStEth;
-        emit StakeDeposited(msg.sender, amountStEth);
-        bool success = IERC20(i_stETH).transferFrom(msg.sender, address(this), amountStEth);
-        if (!success) revert StakePool__TransferFailed();
-
-        // Update contract balance records after the deposit
-        uint256 newBalance = i_stETH.balanceOf(address(this));
-        uint256 mintedStETH = newBalance - oldBalance;
-        s_userDeposit[msg.sender] += mintedStETH;
-        s_totalUserDeposits += mintedStETH;
+        // Update truthful staking rewards total
         s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        s_userDeposit[msg.sender] += amountStEth;
+        s_totalUserDeposits += amountStEth;
+        emit StakeDeposited(msg.sender, amountStEth);
+
+        bool success = i_stETH.transferFrom(msg.sender, address(this), amountStEth);
+        if (!success) revert StakePool__TransferFailed();
+    }
+
+    // function permit(
+    //     address owner,
+    //     address spender,
+    //     uint256 value,
+    //     uint256 deadline,
+    //     uint8 v,
+    //     bytes32 r,
+    //     bytes32 s
+    // ) external;
+
+    // Checks-Effects-Interactions -> organise function such that state is consistent before calling other contracts
+    // May need to add security check of msg.sender
+    function depositStEthWithPermit(uint256 amountStEth, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        moreThanZero(amountStEth)
+    {
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        s_userDeposit[msg.sender] += amountStEth;
+        s_totalUserDeposits += amountStEth;
+        emit StakeDepositedWithPermit(msg.sender, amountStEth);
+
+        i_stETH.permit(msg.sender, address(this), amountStEth, deadline, v, r, s);
+        bool success = i_stETH.transferFrom(msg.sender, address(this), amountStEth);
+        if (!success) revert StakePool__TransferFailed();
     }
 
     function withdrawEth(uint256 amount) external {
         // TODO: Write the logic to burn stETH and withdraw ETH
     }
 
-    /* Withdraw as stETH */
+    /* @notice Withdraws ERC20 stETH directly back to user wallet */
     function withdrawStEth(uint256 amount) external {
         // Check that the user has enough stETH deposited
         if (s_userDeposit[msg.sender] < amount) {
             revert StakePool__InsufficientStETHBalance();
         }
+        // Update truthful staking rewards total
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        s_userDeposit[msg.sender] -= amount;
+        s_totalUserDeposits -= amount;
+        emit StakeWithdrawn(msg.sender, amount);
 
         // Transfer stETH from this contract to the user
-        i_stETH.transfer(msg.sender, amount);
-
-        // Update the user's deposited balance
-        s_userDeposit[msg.sender] -= amount;
-
-        // Update total user deposits
-        s_totalUserDeposits -= amount;
-
-        // Update total staking rewards
-        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        bool success = i_stETH.transfer(msg.sender, amount);
+        if (!success) revert StakePool__WithdrawalFailed();
     }
 
     ///////////////////
