@@ -14,7 +14,7 @@ export default defineConfig({
       },
       deployments: {
         StakePool: {
-          [chains.goerli.id]: '0xf40dBD5531D06194749c24C077e53270c24D5c2C',
+          [chains.goerli.id]: '0x69E9b9c9756e79bdc6064D3349DC06a9AF95287A',
         },
       },
       project: './contracts',
