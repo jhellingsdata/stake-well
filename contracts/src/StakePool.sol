@@ -109,6 +109,8 @@ contract StakePool {
 
         // Update total user deposits
         s_totalUserDeposits += mintedStETH;
+
+        emit MintAndStakeDeposited(msg.sender, mintedStETH);
     }
 
     /* @param amountStEth: Amount of stETH to deposit to pool*/
