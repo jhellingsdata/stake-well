@@ -273,11 +273,8 @@ contract RafflePool is VRFConsumerBaseV2 {
         }
     }
 
-    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime)
-        internal
-        view
-        returns (uint256)
-    {
+    // Temporarily public
+    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
         Twab[] storage twabs; // pointer to storage-based arrays
         if (userAddress == address(0)) {
             twabs = s_totalDepositTwabs;
