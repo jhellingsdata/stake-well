@@ -41,7 +41,7 @@ contract StakePool {
     ///////////////////
     error StakePool__MintFailed();
     error StakePool__NeedsMoreThanZero();
-    error StakePool__InsufficientStETHBalance();
+    error StakePool__InsufficientStEthBalance();
     error StakePool__TransferFailed();
     error StakePool__WithdrawalFailed();
 
@@ -89,9 +89,6 @@ contract StakePool {
     * @notice Likely need to add reentrancy guard, can't follow checks-effects-interactions pattern
     */
     function depositEth() external payable moreThanZero(msg.value) {
-        // Update truthful staking rewards total
-        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
-
         // Save stETH contract balance before deposit
         uint256 oldBalance = i_stETH.balanceOf(address(this));
 
@@ -109,6 +106,9 @@ contract StakePool {
 
         // Update total user deposits
         s_totalUserDeposits += mintedStETH;
+
+        // Update truthful staking rewards total
+        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
 
         emit MintAndStakeDeposited(msg.sender, mintedStETH);
     }
@@ -159,7 +159,7 @@ contract StakePool {
     function withdrawStEth(uint256 amount) external {
         // Check that the user has enough stETH deposited
         if (s_userDeposit[msg.sender] < amount) {
-            revert StakePool__InsufficientStETHBalance();
+            revert StakePool__InsufficientStEthBalance();
         }
         // Update truthful staking rewards total
         s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
