@@ -30,7 +30,7 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
 
 /**
  * @title An stETH no-loss RafflePool Contract
- * @author J Hellings
+ * @author J. Hellings
  * @notice This contract is for creating a staking raffle vault/pool for stETH.
  * @notice stETH staking rewards are used for no-loss raffle.
  * @notice This will duplicate our vault functionality from `StakePool.sol`.
@@ -65,11 +65,11 @@ contract RafflePool is VRFConsumerBaseV2 {
     // State Variables
     ///////////////////
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
-    uint8 private constant NUM_WORDS = 1;
+    // uint8 private constant NUM_WORDS = 1;
 
     IERC20Permit public i_stETH;
-    uint256 public s_totalUserDeposits;
-    uint256 public s_stakingRewardsTotal;
+    uint256 private s_totalUserDeposits;
+    uint256 private s_stakingRewardsTotal;
     address[] private s_players;
     mapping(address => uint256) private s_userDeposit;
     mapping(address => uint256) private s_playerIndex;
@@ -84,6 +84,7 @@ contract RafflePool is VRFConsumerBaseV2 {
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
+    uint8 private immutable i_numWords; // Will allow multi-strategy raffles, e.g. multiple winners
     uint256 private s_lastTimestamp;
     address private s_recentWinner;
     RaffleState private s_raffleState;
@@ -112,7 +113,8 @@ contract RafflePool is VRFConsumerBaseV2 {
         address vrfCoordinatorV2,
         bytes32 gasLane,
         uint64 subscriptionId,
-        uint32 callbackGasLimit
+        uint32 callbackGasLimit,
+        uint8 numWords
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
         i_stETH = IERC20Permit(_stETH);
         i_interval = interval;
@@ -120,6 +122,7 @@ contract RafflePool is VRFConsumerBaseV2 {
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+        i_numWords = numWords;
 
         s_raffleState = RaffleState.OPEN;
         s_lastTimestamp = block.timestamp;
@@ -197,28 +200,13 @@ contract RafflePool is VRFConsumerBaseV2 {
             i_subscriptionId, // id that's funded with link
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
-            NUM_WORDS
+            i_numWords
         );
     }
 
     ///////////////////
     // Public Functions
     ///////////////////
-
-    /* Return total stETH contract balance */
-    function totalBalance() public view returns (uint256) {
-        return i_stETH.balanceOf(address(this));
-    }
-
-    /* Return user's stETH contract balance */
-    function balanceOf(address user) public view returns (uint256) {
-        return s_userDeposit[user];
-    }
-
-    /* Return value of total user deposits (i.e. exactly equals cumulative sum of user deposits, excludes subsequent stETH rebases) */
-    function totalUserDeposits() public view returns (uint256) {
-        return s_totalUserDeposits;
-    }
 
     ///////////////////
     // Internal Functions
@@ -335,5 +323,40 @@ contract RafflePool is VRFConsumerBaseV2 {
         }
 
         return result;
+    }
+
+    ///////////////////
+    // Getter Functions
+    ///////////////////
+    /* Return total stETH contract balance */
+    function totalBalance() public view returns (uint256) {
+        return i_stETH.balanceOf(address(this));
+    }
+
+    /* Return user's stETH contract balance */
+    function balanceOf(address user) public view returns (uint256) {
+        return s_userDeposit[user];
+    }
+
+    /* Return value of total user deposits (i.e. exactly equals cumulative sum of user deposits, excludes subsequent stETH rebases) */
+    function totalUserDeposits() public view returns (uint256) {
+        return s_totalUserDeposits;
+    }
+
+    function getRaffleState() public view returns (RaffleState) {
+        return s_raffleState;
+    }
+
+    // note: may want to fetch in batches
+    function getPlayers() public view returns (address[] memory) {
+        return s_players;
+    }
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
+    }
+
+    function getRecentWinner() public view returns (address) {
+        return s_recentWinner;
     }
 }
