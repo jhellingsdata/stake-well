@@ -22,11 +22,12 @@
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "./IERC20Permit.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title An stETH no-loss RafflePool Contract
@@ -37,15 +38,16 @@ import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2
  * @dev Implements Chainlink VRFv2 for random number generation.
  */
 
-contract RafflePool is VRFConsumerBaseV2 {
+contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // Errors
     ///////////////////
-    error StakePool__NeedsMoreThanZero();
-    error StakePool__MintFailed();
-    error StakePool__TransferFailed();
-    error StakePool__WithdrawalFailed();
-    error StakePool__InsufficientStEthBalance();
+    error RafflePool__NeedsMoreThanZero();
+    error RafflePool__MintFailed();
+    error RafflePool__TransferFailed();
+    error RafflePool__WithdrawalFailed();
+    error RafflePool__InsufficientStEthBalance();
+    error RafflePool__UpkeepNotNeeded(uint256 raffleBalance, uint256 raffleState);
 
     ///////////////////
     // Type Declarations
@@ -85,13 +87,14 @@ contract RafflePool is VRFConsumerBaseV2 {
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
     uint8 private immutable i_numWords; // Will allow multi-strategy raffles, e.g. multiple winners
-    uint256 private s_lastTimestamp;
+    uint256 private s_lastTimeStamp;
     address private s_recentWinner;
     RaffleState private s_raffleState;
 
     ///////////////////
     // Events
     ///////////////////
+    event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner);
 
     ///////////////////
@@ -99,7 +102,7 @@ contract RafflePool is VRFConsumerBaseV2 {
     ///////////////////
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
-            revert StakePool__NeedsMoreThanZero();
+            revert RafflePool__NeedsMoreThanZero();
         }
         _;
     }
@@ -108,24 +111,23 @@ contract RafflePool is VRFConsumerBaseV2 {
     // Functions
     ///////////////////
     constructor(
-        address _stETH,
+        address steth,
         uint256 interval,
         address vrfCoordinatorV2,
         bytes32 gasLane,
         uint64 subscriptionId,
         uint32 callbackGasLimit,
         uint8 numWords
-    ) VRFConsumerBaseV2(vrfCoordinatorV2) {
-        i_stETH = IERC20Permit(_stETH);
+    ) VRFConsumerBaseV2(vrfCoordinatorV2) Ownable(msg.sender) {
+        i_stETH = IERC20Permit(steth);
         i_interval = interval;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
         i_numWords = numWords;
-
         s_raffleState = RaffleState.OPEN;
-        s_lastTimestamp = block.timestamp;
+        s_lastTimeStamp = block.timestamp;
     }
 
     ///////////////////
@@ -138,7 +140,7 @@ contract RafflePool is VRFConsumerBaseV2 {
         // Save stETH contract balance before deposit
         uint256 oldBalance = i_stETH.balanceOf(address(this));
         (bool success,) = address(i_stETH).call{value: msg.value}("");
-        if (!success) revert StakePool__MintFailed();
+        if (!success) revert RafflePool__MintFailed();
         // Check the contract's stETH balance after minting
         uint256 newBalance = i_stETH.balanceOf(address(this));
         // Calculate the amount of stETH minted
@@ -161,7 +163,7 @@ contract RafflePool is VRFConsumerBaseV2 {
         external
         moreThanZero(amountStEth)
     {
-        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         s_userDeposit[msg.sender] += amountStEth;
         s_totalUserDeposits += amountStEth;
         s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], uint32(block.timestamp)));
@@ -170,16 +172,16 @@ contract RafflePool is VRFConsumerBaseV2 {
 
         i_stETH.permit(msg.sender, address(this), amountStEth, deadline, v, r, s);
         bool success = i_stETH.transferFrom(msg.sender, address(this), amountStEth);
-        if (!success) revert StakePool__TransferFailed();
+        if (!success) revert RafflePool__TransferFailed();
     }
 
     function withdrawStEth(uint256 amount) external moreThanZero(amount) {
         // Check that the user has enough stETH deposited
         if (s_userDeposit[msg.sender] < amount) {
-            revert StakePool__InsufficientStEthBalance();
+            revert RafflePool__InsufficientStEthBalance();
         }
         // Update truthful staking rewards total
-        s_stakingRewardsTotal = totalBalance() - s_totalUserDeposits;
+        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         s_userDeposit[msg.sender] -= amount;
         s_totalUserDeposits -= amount;
         s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], uint32(block.timestamp)));
@@ -188,14 +190,31 @@ contract RafflePool is VRFConsumerBaseV2 {
 
         // Transfer stETH from this contract to the user
         bool success = i_stETH.transfer(msg.sender, amount);
-        if (!success) revert StakePool__WithdrawalFailed();
+        if (!success) revert RafflePool__WithdrawalFailed();
     }
 
-    function pickWinner() external {
-        // if ((block.timestamp - s_lastTimestamp) < i_interval) {
+    function pickWinner() external onlyOwner {
+        // if ((block.timestamp - s_lastTimeStamp) < i_interval) {
         //     revert();
         // }
+        s_raffleState = RaffleState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
+            i_gasLane, // gas lane
+            i_subscriptionId, // id that's funded with link
+            REQUEST_CONFIRMATIONS,
+            i_callbackGasLimit,
+            i_numWords
+        );
+        emit RequestedRaffleWinner(requestId);
+    }
+
+    function performUpkeep(bytes calldata /* performData */ ) external {
+        (bool upkeepNeeded,) = checkUpkeep("");
+        if (!upkeepNeeded) {
+            revert RafflePool__UpkeepNotNeeded(s_stakingRewardsTotal, uint256(s_raffleState));
+        }
+        s_raffleState = RaffleState.CALCULATING;
+        i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gas lane
             i_subscriptionId, // id that's funded with link
             REQUEST_CONFIRMATIONS,
@@ -207,6 +226,26 @@ contract RafflePool is VRFConsumerBaseV2 {
     ///////////////////
     // Public Functions
     ///////////////////
+    /*
+    * @dev Used by Chainlink Automation nodes call to determine if the contract needs upkeep.
+    * The following should be true for this to return true:
+    * 1. Time interval has passed between raffle run
+    * 2. Raffle is open
+    * 3. The contract has staking rewards
+    * 4. (Implicit) The subscription is funded with LINK
+    */
+    function checkUpkeep(bytes memory /* checkData */ )
+        public
+        view
+        returns (bool upkeepNeeded, bytes memory /* performData */ )
+    {
+        bool timePassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
+        bool isOpen = RaffleState.OPEN == s_raffleState;
+        bool hasBalance = s_stakingRewardsTotal > 0;
+        // bool hasPlayers = s_players.length > 0;
+        upkeepNeeded = timePassed && isOpen && hasBalance;
+        return (upkeepNeeded, "0x0");
+    }
 
     ///////////////////
     // Internal Functions
@@ -216,20 +255,20 @@ contract RafflePool is VRFConsumerBaseV2 {
         // 2. Scale the random number from Chainlink VRF to the range `[0, totalTWAB]` using modulo (`%`). This will give us a "ticket number" in the virtual array.
         // 3. Iterate over users, summing their TWABs, until the sum exceeds the ticket number. The current user is the winner.
 
-        uint256 totalTwab = calculateTwab(address(0), s_lastTimestamp, block.timestamp);
+        uint256 totalTwab = calculateTwab(address(0), s_lastTimeStamp, block.timestamp);
         uint256 scaledNumber = randomWords[0] % totalTwab;
         // Initialise a running total of TWABs
         uint256 runningTotal = 0;
         address winner;
         for (uint256 i = 0; i < s_players.length; i++) {
-            runningTotal += calculateTwab(s_players[i], s_lastTimestamp, block.timestamp);
+            runningTotal += calculateTwab(s_players[i], s_lastTimeStamp, block.timestamp);
             // If the running total exceeds the ticket number, this user is the winner
             if (runningTotal > scaledNumber) {
                 winner = s_players[i];
             }
         }
         // Update the last timestamp
-        s_lastTimestamp = block.timestamp;
+        s_lastTimeStamp = block.timestamp;
         // Allocate stETH raffle rewards to winning user
         s_userDeposit[winner] += s_stakingRewardsTotal;
         s_recentWinner = winner;
@@ -270,10 +309,10 @@ contract RafflePool is VRFConsumerBaseV2 {
             twabs = s_userTwabs[userAddress];
         }
 
-        uint256 precedingIndex = findPrecedingTimestampIndex(twabs, s_startTime);
+        uint256 precedingIndex = findPrecedingTimeStampIndex(twabs, s_startTime);
 
         uint256 balanceCumulative = 0;
-        uint256 prevTimestamp = s_startTime;
+        uint256 prevTimeStamp = s_startTime;
         uint256 prevBalance = precedingIndex == type(uint256).max ? 0 : twabs[precedingIndex].balance;
 
         for (uint256 i = precedingIndex + 1; i < twabs.length; i++) {
@@ -281,20 +320,20 @@ contract RafflePool is VRFConsumerBaseV2 {
                 break;
             }
 
-            uint256 duration = uint256(twabs[i].timestamp - prevTimestamp);
+            uint256 duration = uint256(twabs[i].timestamp - prevTimeStamp);
             balanceCumulative += prevBalance * duration;
 
-            prevTimestamp = twabs[i].timestamp;
+            prevTimeStamp = twabs[i].timestamp;
             prevBalance = twabs[i].balance;
         }
 
-        uint256 finalDuration = uint256(s_endTime - prevTimestamp);
+        uint256 finalDuration = uint256(s_endTime - prevTimeStamp);
         balanceCumulative += prevBalance * finalDuration;
 
         return balanceCumulative / (s_endTime - s_startTime);
     }
 
-    function findPrecedingTimestampIndex(Twab[] storage twabs, uint256 s_lastTimeStamp)
+    function findPrecedingTimeStampIndex(Twab[] storage twabs, uint256 _s_lastTimeStamp)
         internal
         view
         returns (uint256)
@@ -311,7 +350,7 @@ contract RafflePool is VRFConsumerBaseV2 {
         while (start <= end) {
             mid = start + (end - start) / 2;
 
-            if (twabs[mid].timestamp <= s_lastTimeStamp) {
+            if (twabs[mid].timestamp <= _s_lastTimeStamp) {
                 result = mid; // Found a potential preceding timestamp
                 start = mid + 1;
             } else {
@@ -329,34 +368,38 @@ contract RafflePool is VRFConsumerBaseV2 {
     // Getter Functions
     ///////////////////
     /* Return total stETH contract balance */
-    function totalBalance() public view returns (uint256) {
+    function getTotalBalance() external view returns (uint256) {
         return i_stETH.balanceOf(address(this));
     }
 
     /* Return user's stETH contract balance */
-    function balanceOf(address user) public view returns (uint256) {
+    function getUserDeposit(address user) external view returns (uint256) {
         return s_userDeposit[user];
     }
 
     /* Return value of total user deposits (i.e. exactly equals cumulative sum of user deposits, excludes subsequent stETH rebases) */
-    function totalUserDeposits() public view returns (uint256) {
+    function getTotalUserDeposits() external view returns (uint256) {
         return s_totalUserDeposits;
     }
 
-    function getRaffleState() public view returns (RaffleState) {
+    function getStakingRewardsTotal() external view returns (uint256) {
+        return s_stakingRewardsTotal;
+    }
+
+    function getRaffleState() external view returns (RaffleState) {
         return s_raffleState;
     }
 
     // note: may want to fetch in batches
-    function getPlayers() public view returns (address[] memory) {
+    function getPlayers() external view returns (address[] memory) {
         return s_players;
     }
 
-    function getNumberOfPlayers() public view returns (uint256) {
+    function getNumberOfPlayers() external view returns (uint256) {
         return s_players.length;
     }
 
-    function getRecentWinner() public view returns (address) {
+    function getRecentWinner() external view returns (address) {
         return s_recentWinner;
     }
 }
