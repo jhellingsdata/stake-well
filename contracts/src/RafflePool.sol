@@ -24,7 +24,7 @@
 
 pragma solidity ^0.8.20;
 
-import "./IERC20Permit.sol";
+import {IERC20Permit} from "./IERC20Permit.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -69,7 +69,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     // uint8 private constant NUM_WORDS = 1;
 
-    IERC20Permit public i_stETH;
+    IERC20Permit public immutable i_stETH;
     uint256 private s_totalUserDeposits;
     uint256 private s_stakingRewardsTotal;
     address[] private s_players;
@@ -86,7 +86,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     bytes32 private immutable i_gasLane;
     uint64 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
-    uint8 private immutable i_numWords; // Will allow multi-strategy raffles, e.g. multiple winners
+    uint32 private immutable i_numWords; // Will allow multi-strategy raffles, e.g. multiple winners
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
     RaffleState private s_raffleState;
@@ -96,6 +96,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner);
+    event StakingRewardsUpdated(uint256 newStakingRewardsTotal);
 
     ///////////////////
     // Modifiers
@@ -117,7 +118,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         bytes32 gasLane,
         uint64 subscriptionId,
         uint32 callbackGasLimit,
-        uint8 numWords
+        uint32 numWords
     ) VRFConsumerBaseV2(vrfCoordinatorV2) Ownable(msg.sender) {
         i_stETH = IERC20Permit(steth);
         i_interval = interval;
@@ -137,6 +138,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     * @notice Likely need to add reentrancy guard, can't follow checks-effects-interactions pattern
     */
     function depositEth() external payable moreThanZero(msg.value) {
+        _addPlayer(msg.sender);
         // Save stETH contract balance before deposit
         uint256 oldBalance = i_stETH.balanceOf(address(this));
         (bool success,) = address(i_stETH).call{value: msg.value}("");
@@ -148,14 +150,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         // Update the user's deposited balance
         s_userDeposit[msg.sender] += mintedStETH;
         s_totalUserDeposits += mintedStETH;
-        // Update truthful staking rewards total
-        s_stakingRewardsTotal = newBalance - s_totalUserDeposits;
-        _addPlayer(msg.sender);
-
         // Add a new Twab to the user's array of Twabs
-        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], uint32(block.timestamp)));
+        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], block.timestamp));
         // Push total supply observations
-        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, uint32(block.timestamp)));
+        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, block.timestamp));
     }
 
     // Following Checks-Effects-Interactions
@@ -163,12 +161,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         external
         moreThanZero(amountStEth)
     {
-        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
+        _addPlayer(msg.sender);
         s_userDeposit[msg.sender] += amountStEth;
         s_totalUserDeposits += amountStEth;
-        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], uint32(block.timestamp)));
-        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, uint32(block.timestamp)));
-        _addPlayer(msg.sender);
+        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], block.timestamp));
+        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, block.timestamp));
 
         i_stETH.permit(msg.sender, address(this), amountStEth, deadline, v, r, s);
         bool success = i_stETH.transferFrom(msg.sender, address(this), amountStEth);
@@ -180,12 +177,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         if (s_userDeposit[msg.sender] < amount) {
             revert RafflePool__InsufficientStEthBalance();
         }
-        // Update truthful staking rewards total
-        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         s_userDeposit[msg.sender] -= amount;
         s_totalUserDeposits -= amount;
-        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], uint32(block.timestamp)));
-        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, uint32(block.timestamp)));
+        s_userTwabs[msg.sender].push(Twab(s_userDeposit[msg.sender], block.timestamp));
+        s_totalDepositTwabs.push(Twab(s_totalUserDeposits, block.timestamp));
         _removePlayer(msg.sender); // remove player if they withdraw all their stETH
 
         // Transfer stETH from this contract to the user
@@ -226,6 +221,18 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // Public Functions
     ///////////////////
+
+    // Called periodically to update the staking rewards
+    function updateStakingRewards() external {
+        uint256 currentBalance = i_stETH.balanceOf(address(this));
+        uint256 expectedBalance = s_totalUserDeposits + s_stakingRewardsTotal;
+
+        if (currentBalance > expectedBalance) {
+            s_stakingRewardsTotal += currentBalance - expectedBalance;
+            emit StakingRewardsUpdated(s_stakingRewardsTotal);
+        }
+    }
+
     /*
     * @dev Used by Chainlink Automation nodes call to determine if the contract needs upkeep.
     * The following should be true for this to return true:
@@ -275,7 +282,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         emit PickedWinner(winner);
     }
 
-    // This function can be called after updating the s_userDeposit for a deposit operation
+    // This function can be called before updating the s_userDeposit for a deposit operation
     function _addPlayer(address _user) internal {
         if (s_userDeposit[_user] == 0) {
             s_players.push(_user);
