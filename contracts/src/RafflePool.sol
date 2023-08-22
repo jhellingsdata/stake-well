@@ -208,6 +208,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         if (!upkeepNeeded) {
             revert RafflePool__UpkeepNotNeeded(s_stakingRewardsTotal, uint256(s_raffleState));
         }
+        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         s_raffleState = RaffleState.CALCULATING;
         i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gas lane
@@ -249,8 +250,8 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         bool timePassed = (block.timestamp - s_lastTimestamp) >= i_interval;
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool hasBalance = s_stakingRewardsTotal > 0;
-        // bool hasPlayers = s_activeUsers.length > 0;
-        upkeepNeeded = timePassed && isOpen && hasBalance;
+        bool hasUsers = s_activeUsers.length > 0;
+        upkeepNeeded = timePassed && isOpen && hasBalance && hasUsers;
         return (upkeepNeeded, "0x0");
     }
 
@@ -275,7 +276,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     function _updateBalanceLogs(address userAddress) internal {
-        s_lastActiveTimestamp[userAddress] = block.timestamp;
+        s_lastActiveTimestamp[userAddress] = block.timestamp; // May be rudundant
         s_userTwabs[userAddress].push(BalanceLog({balance: s_userDeposit[userAddress], timestamp: block.timestamp}));
         s_totalDepositTwabs.push(BalanceLog(s_totalUserDeposits, block.timestamp));
     }
@@ -306,9 +307,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         }
         // After determining the winner
         _cleanupUsers();
-        // Update the last timestamp
+        s_raffleState = RaffleState.OPEN;
+        // Update the last timestamp for next raffle
         s_lastTimestamp = block.timestamp;
         // Allocate stETH raffle rewards to winning user
+        // ToDo: consider case if winning user has 0 balance, will still have been removed from active users list
         s_userDeposit[winner] += s_stakingRewardsTotal;
         s_recentWinner = winner;
         emit PickedWinner(winner);
@@ -411,13 +414,15 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     // internal & private view & pure functions
+
     function _cleanupUsers() internal {
-        // Replace s_players with s_tempActivePlayers
+        // Swap the roles of s_activeUsers and s_tempActiveUsers
+        address[] storage temp = s_activeUsers;
         s_activeUsers = s_tempActiveUsers;
-        // Clear the temporary array for the next raffle
+        s_tempActiveUsers = temp;
+
+        // Clear the now-temporary array for the next raffle
         delete s_tempActiveUsers;
-        // Reinitialise the temporary array
-        s_tempActiveUsers = new address[](0);
     }
 
     // function _isActiveForRaffle(address user) internal view returns (bool) {
@@ -451,15 +456,24 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     // note: may want to fetch in batches
-    function getPlayers() external view returns (address[] memory) {
+    function getActiveDepositors() external view returns (address[] memory) {
         return s_activeUsers;
     }
 
-    function getNumberOfPlayers() external view returns (uint256) {
+    function getActiveDepositorsCount() external view returns (uint256) {
         return s_activeUsers.length;
     }
 
     function getRecentWinner() external view returns (address) {
         return s_recentWinner;
+    }
+
+    // Temporary getters
+    function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
+        return s_userTwabs[user];
+    }
+
+    function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
+        return s_totalDepositTwabs;
     }
 }
