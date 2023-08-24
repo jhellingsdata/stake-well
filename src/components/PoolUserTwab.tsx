@@ -2,18 +2,18 @@
 
 import { formatEther, BaseError } from 'viem'
 import { type Address } from 'wagmi'
-import { useRafflePoolGetUserDeposit } from '../generated'
+import { useRafflePoolCalculateTwab } from '../generated'
 
 import { useAccount } from 'wagmi'
 
-interface PoolUserBalanceProps {
+interface PoolUserTwabProps {
     decimals?: number;
 }
 
-export const PoolUserBalance: React.FC<PoolUserBalanceProps> = ({ decimals = 18 }) => {
+export const PoolUserBalance: React.FC<PoolUserTwabProps> = ({ decimals = 18 }) => {
     return (
         <div>
-            <ViewUserBalance decimals={decimals} />
+            <ViewUserTwab decimals={decimals} />
         </div>
     )
 }
@@ -25,7 +25,7 @@ interface ViewUserBalanceProps {
 function ViewUserBalance({ decimals }: ViewUserBalanceProps) {
     const { address } = useAccount()
 
-    const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useRafflePoolGetUserDeposit({
+    const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useStakePoolBalanceOf({
         args: [address as Address],
         enabled: Boolean(address),
     })

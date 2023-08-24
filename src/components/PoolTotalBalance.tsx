@@ -1,7 +1,7 @@
 'use client'
 
 import { formatEther, BaseError } from 'viem'
-import { useStakePoolTotalBalance } from '../generated'
+import { useRafflePoolGetTotalBalance } from '../generated'
 
 interface PoolTotalBalanceProps {
     decimals?: number;
@@ -20,7 +20,7 @@ interface TotalBalanceProps {
 }
 
 function TotalBalance({ decimals }: TotalBalanceProps) {
-    const { data, error, isLoading, isSuccess, refetch } = useStakePoolTotalBalance()
+    const { data, error, isLoading, isSuccess, refetch } = useRafflePoolGetTotalBalance()
 
     const formatBalance = (balance: bigint) => {
         let etherString = balance.toString();
@@ -39,9 +39,9 @@ function TotalBalance({ decimals }: TotalBalanceProps) {
         <div>
             Total stETH balance: {' '}
             {isLoading ? 'Loading...' : data ? formatBalance(data) : 'Data not available'}
-            {/* <button onClick={() => refetch()}>
+            <button onClick={() => refetch()}>
                 {isLoading ? 'fetching...' : 'fetch'}
-            </button> */}
+            </button>
             {error && <div>{(error as BaseError).shortMessage}</div>}
         </div>
     )

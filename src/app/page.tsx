@@ -9,7 +9,8 @@ import { PoolTotalBalance } from '../components/PoolTotalBalance'
 import { PoolRewardsBalance } from '../components/PoolRewardsBalance'
 import { Withdraw } from '../components/Withdraw'
 import { DepositPermit } from '../components/DepositPermit'
-import { PoolUserTwab } from '../components/PoolUserTwab'
+import { DepositApprove } from '../components/DepositApprove'
+// import { PoolUserTwab } from '../components/PoolUserTwab'
 
 export function Page() {
   return (
@@ -35,12 +36,14 @@ export function Page() {
         <h2>Deposit ETH</h2>
         <Deposit />
         <br />
+        <h3>Deposit stETH using approve</h3>
+        <DepositApprove />
         <h3>Deposit stETH using permit</h3>
         <DepositPermit permitDeadline={Math.floor(Date.now() / 1000) + 3600} />
         <br />
         <hr />
         <h2>View Stake Balance</h2>
-        <PoolUserBalance decimals={4} />
+        <PoolUserBalance decimals={18} />
         <br />
         <hr />
         <h2>View Pool Balance</h2>

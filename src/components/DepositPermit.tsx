@@ -3,7 +3,7 @@
 import React, { use, useState, useEffect } from 'react';
 import { recoverTypedDataAddress, BaseError } from 'viem'
 import { type Address, useAccount, useContractRead, useSignTypedData, useWaitForTransaction } from 'wagmi';
-import { useIerc20PermitNonces, ierc20PermitABI, stakePoolAddress, usePrepareStakePoolDepositStEthWithPermit, useStakePoolDepositStEthWithPermit } from '../generated';
+import { useIerc20PermitNonces, ierc20PermitABI, stakePoolAddress, rafflePoolAddress, usePrepareRafflePoolDepositStEthWithPermit, useRafflePoolDepositStEthWithPermit } from '../generated';
 import { useDebounce } from '../hooks/useDebounce';
 import { ValidateInput } from './ValidateInput';
 
@@ -28,7 +28,7 @@ function generateEIP712Message(value, nonce, types, deadline) {
     const { address } = useAccount()
     const message = {
         owner: address,  // User's address
-        spender: stakePoolAddress[5],  // Address of the contract to which the user is permitting
+        spender: rafflePoolAddress[5],  // Address of the contract to which the user is permitting
         value: parseEther(value),
         nonce: nonce,
         deadline: deadline,
@@ -161,7 +161,7 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
 
 
     console.log('args: ', debouncedValue ? parseEther(debouncedValue) : BigInt(0), deadline, v, r, s)
-    const { config } = usePrepareStakePoolDepositStEthWithPermit({
+    const { config } = usePrepareRafflePoolDepositStEthWithPermit({
         // value: debouncedValue ? parseEther(debouncedValue) : BigInt(0),
         args: [
             debouncedValue ? parseEther(debouncedValue) : BigInt(0),
@@ -173,7 +173,7 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
         enabled: Boolean(signature)
     })
 
-    const { write, data: depositPermitData, error: depositPermitError, isError: isDepositPermitError } = useStakePoolDepositStEthWithPermit(config)
+    const { write, data: depositPermitData, error: depositPermitError, isError: isDepositPermitError } = useRafflePoolDepositStEthWithPermit(config)
 
 
     const {

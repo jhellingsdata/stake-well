@@ -1,7 +1,7 @@
 'use client'
 
 import { formatEther, BaseError } from 'viem'
-import { useStakePoolSStakingRewardsTotal, useStakePoolSTotalUserDeposits, useStakePoolTotalBalance } from '../generated'
+import { useRafflePoolGetTotalUserDeposits, useRafflePoolGetTotalBalance } from '../generated'
 
 interface PoolRewardsBalanceProps {
     decimals?: number
@@ -21,8 +21,8 @@ interface RewardsBalanceProps {
 
 function RewardsBalance({ decimals }: RewardsBalanceProps) {
     // Fetch total contract balance and total users' deposits
-    const { data: totalBalance, isLoading: isTotalBalanceLoading, error: totalBalanceError, refetch: refetchTotalBalance } = useStakePoolTotalBalance()
-    const { data: totalUserDeposits, isLoading: isTotalUserDepositsLoading, error: totalUserDepositsError, refetch: refetchTotalDeposits } = useStakePoolSTotalUserDeposits()
+    const { data: totalBalance, isLoading: isTotalBalanceLoading, error: totalBalanceError, refetch: refetchTotalBalance } = useRafflePoolGetTotalBalance()
+    const { data: totalUserDeposits, isLoading: isTotalUserDepositsLoading, error: totalUserDepositsError, refetch: refetchTotalDeposits } = useRafflePoolGetTotalUserDeposits()
 
     const isLoading = isTotalBalanceLoading || isTotalUserDepositsLoading
     const error = totalBalanceError || totalUserDepositsError

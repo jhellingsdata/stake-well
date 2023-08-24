@@ -1,13 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { parseEther, BaseError } from 'viem'
-import { usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
+import { type Address, usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
 import { useDebounce } from '../hooks/useDebounce'
-import { useStakePoolDepositEth, usePrepareStakePoolDepositEth } from '../generated'
-
-import { stringify } from '../utils/stringify'
-
+import { rafflePoolAddress, useRafflePoolDepositEth, usePrepareRafflePoolDepositEth, useStakePoolDepositStEth, usePrepareStakePoolDepositStEth, useIerc20Approve, usePrepareIerc20Approve } from '../generated'
 import { ValidateInput } from './ValidateInput';
 
 export function Deposit() {
@@ -17,6 +14,7 @@ export function Deposit() {
         </div>
     )
 }
+
 
 function DepositEth() {
 
@@ -29,13 +27,13 @@ function DepositEth() {
         setIsValid(newIsValid);
     }
 
-    const { config } = usePrepareStakePoolDepositEth({
+    const { config } = usePrepareRafflePoolDepositEth({
         value: debouncedValue ? parseEther(debouncedValue) : BigInt(0),
         enabled: Boolean(debouncedValue),
     })
 
     const { write, data, error, isLoading, isError } =
-        useStakePoolDepositEth(config)
+        useRafflePoolDepositEth(config)
 
     const {
         data: receipt,
@@ -47,6 +45,7 @@ function DepositEth() {
         <>
             <form
                 onSubmit={(e) => {
+                    console.log(value)
                     e.preventDefault()
                     write?.()
                 }}
