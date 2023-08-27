@@ -74,7 +74,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     // uint32 private constant NUM_WORDS = 1;
 
-    IERC20Permit public immutable i_stETH;
+    IERC20Permit private immutable i_stETH;
     uint256 private s_totalUserDeposits;
     uint256 private s_stakingRewardsTotal;
     address[] private s_activeUsers;
