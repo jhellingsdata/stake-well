@@ -32,6 +32,10 @@ contract DeployRafflePool is Script {
             fundSubscription.fundSubscription(vrfCoordinatorV2, subscriptionId, link, deployerPrivateKey);
         }
 
+        // if we are on a local Anvil chain, set genesis timestamp to current time: 1693409871
+        if (block.chainid == 31337) {
+            vm.warp(1693408871);
+        }
         vm.startBroadcast(deployerPrivateKey);
         RafflePool rafflePool = new RafflePool(
             steth,
