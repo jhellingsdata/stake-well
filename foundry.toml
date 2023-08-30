@@ -23,7 +23,7 @@ goerli = "${GOERLI_RPC_URL}"
 
 [fmt]
 # `forge fmt` defaults with line_length reduced from 120 to 80
-line_length = 80
+line_length = 120
 tab_width = 4
 bracket_spacing = false
 int_types = 'long'
