@@ -40,12 +40,14 @@ contract CreateSubscription is Script {
     }
 
     function createSubscription(address vrfCoordinatorV2, uint256 deployerPrivateKey) public returns (uint64) {
-        console.log("Creating subscription on ChainId: ", block.chainid);
+        // console.log("Creating subscription on ChainId: ", block.chainid);
         vm.startBroadcast(deployerPrivateKey);
         uint64 subId = VRFCoordinatorV2Mock(vrfCoordinatorV2).createSubscription();
         vm.stopBroadcast();
-        console.log("Created subscription with id: ", subId);
-        console.log("Update subscriptionId in HelperConfig.s.sol");
+        if (block.chainid != 31337) {
+            console.log("Created subscription with id: ", subId, " on ChainId: ", block.chainid);
+            console.log("Update subscriptionId in HelperConfig.s.sol");
+        }
         return subId;
     }
 
@@ -67,9 +69,11 @@ contract FundSubscription is Script {
     function fundSubscription(address vrfCoordinatorV2, uint64 subId, address link, uint256 deployerPrivateKey)
         public
     {
-        console.log("Funding subscription: ", subId);
-        console.log("Using vrfCoordinatorV2: ", vrfCoordinatorV2);
-        console.log("On ChainId: ", block.chainid);
+        if (block.chainid != 31337) {
+            console.log("Funding subscription: ", subId);
+            console.log("Using vrfCoordinatorV2: ", vrfCoordinatorV2);
+            console.log("On ChainId: ", block.chainid);
+        }
         if (block.chainid == 31337) {
             vm.startBroadcast(deployerPrivateKey);
             VRFCoordinatorV2Mock(vrfCoordinatorV2).fundSubscription(subId, FUND_AMOUNT);
@@ -94,11 +98,11 @@ contract AddConsumer is Script {
     function addConsumer(address rafflePool, address vrfCoordinatorV2, uint64 subId, uint256 deployerPrivateKey)
         public
     {
-        // We are getting a deployment error from VRFCoordinatorV2::addConsumer, with "MustBeSubOwner",
-        // likely because we were starting broadcast without private key!.
-        console.log("Adding consumer contract: ", rafflePool);
-        console.log("Using vrfCoordinatorV2: ", vrfCoordinatorV2);
-        console.log("On ChainId: ", block.chainid);
+        if (block.chainid != 31337) {
+            console.log("Adding consumer contract: ", rafflePool);
+            console.log("Using vrfCoordinatorV2: ", vrfCoordinatorV2);
+            console.log("On ChainId: ", block.chainid);
+        }
         vm.startBroadcast(deployerPrivateKey);
         VRFCoordinatorV2Mock(vrfCoordinatorV2).addConsumer(subId, rafflePool);
         vm.stopBroadcast();
