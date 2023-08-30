@@ -41,7 +41,7 @@ contract HelperConfig is Script {
     function getMainnetEthConfig() public view returns (NetworkConfig memory mainnetNetworkConfig) {
         mainnetNetworkConfig = NetworkConfig({
             steth: 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84,
-            interval: 600,
+            interval: 604800,
             vrfCoordinatorV2: 0x271682DEB8C4E0901D1a1550aD2e64D568E69909,
             gasLane: 0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805,
             subscriptionId: 0,
@@ -55,7 +55,7 @@ contract HelperConfig is Script {
     function getGoerliEthConfig() public view returns (NetworkConfig memory goerliNetworkConfig) {
         goerliNetworkConfig = NetworkConfig({
             steth: 0x1643E812aE58766192Cf7D2Cf9567dF2C37e9B7F,
-            interval: 6000,
+            interval: 604800,
             vrfCoordinatorV2: 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D,
             gasLane: 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15,
             subscriptionId: 13164,
@@ -86,7 +86,7 @@ contract HelperConfig is Script {
 
         anvilNetworkConfig = NetworkConfig({
             steth: address(steth), // need to import local stETH
-            interval: 600,
+            interval: 604800,
             vrfCoordinatorV2: address(vrfCoordinatorV2Mock),
             gasLane: 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15,
             subscriptionId: 0, // update with our subId
