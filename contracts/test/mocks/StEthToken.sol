@@ -2,12 +2,11 @@
 
 pragma solidity ^0.8.0;
 
-// import {ERC20} from "@solmate/tokens/ERC20.sol";
-// ERC20("Mock stETH", "stETH", 18)
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "../../src/IERC20Permit.sol";
 
-contract StEthMock is IERC20 {
+contract StEthMock is IERC20Permit {
     // Represents the internal shares used to calculate balances.
+
     mapping(address => uint256) internal shares;
 
     // Allowances are nominated in tokens, not token shares.
@@ -25,6 +24,16 @@ contract StEthMock is IERC20 {
         address indexed account, uint256 preRebaseTokenAmount, uint256 postRebaseTokenAmount, uint256 sharesAmount
     );
 
+    /*//////////////////////////////////////////////////////////////
+                            METADATA STORAGE
+    //////////////////////////////////////////////////////////////*/
+
+    string public name = "Liquid staked Ether 2.0";
+
+    string public symbol = "stETH";
+
+    uint8 public immutable decimals = 18;
+
     constructor(uint256 initialSupply, uint256 initialTotalShares) payable {
         // _bootstrapInitialHolder
         uint256 balance = address(this).balance;
@@ -32,19 +41,21 @@ contract StEthMock is IERC20 {
 
         setTotalPooledEther(initialSupply);
         _mintInitialShares(initialTotalShares);
+        INITIAL_CHAIN_ID = block.chainid;
+        INITIAL_DOMAIN_SEPARATOR = computeDomainSeparator();
     }
 
-    function name() public pure returns (string memory) {
-        return "Liquid staked Ether 2.0";
-    }
+    // function name() public pure returns (string memory) {
+    //     return "Liquid staked Ether 2.0";
+    // }
 
-    function symbol() public pure returns (string memory) {
-        return "stETH";
-    }
+    // function symbol() public pure returns (string memory) {
+    //     return "stETH";
+    // }
 
-    function decimals() public pure returns (uint8) {
-        return 18;
-    }
+    // function decimals() public pure returns (uint8) {
+    //     return 18;
+    // }
 
     function totalSupply() public view override returns (uint256) {
         return _getTotalPooledEther();
@@ -212,8 +223,6 @@ contract StEthMock is IERC20 {
         _emitTransferAfterMintingShares(INITIAL_TOKEN_HOLDER, _sharesAmount);
     }
 
-    ///////
-
     function _getTotalPooledEther() internal view virtual returns (uint256) {
         return totalPooledEther;
     }
@@ -221,7 +230,9 @@ contract StEthMock is IERC20 {
     //////////////////////////
     // Deposit
     //////////////////////////
-    receive() external payable {}
+    receive() external payable {
+        submit(address(0));
+    }
     // ETH is sent to the contract and stETH is minted in return.
 
     fallback() external payable {
@@ -244,52 +255,87 @@ contract StEthMock is IERC20 {
         // totalShares += shares[account];
     }
 
-    // function _mintShares(address _recipient, uint256 _sharesAmount) internal returns (uint256 newTotalShares) {
-    //     newTotalShares = totalShares + _sharesAmount;
-    //     totalShares = newTotalShares;
-    //     shares[_recipient] += _sharesAmount;
-    // }
-
-    // // Override the balanceOf function to reflect rebase.
-    // function balanceOf(address _account) public view override returns (uint256) {
-    //     return getPooledEthByShares(_sharesOf(_account));
-    // }
-
     // Function to simulate the daily token rebase.
     function rebase() external {
         uint256 newTotalSupply = totalSupply() * 10001368 / 10000000; // Approximation of (1 + 0.05)^(1/365)
-        uint256 mintAmount = newTotalSupply - totalSupply();
-        mintShares(address(this), mintAmount);
+        setTotalPooledEther(newTotalSupply);
     }
 
     function burnShares(address _account, uint256 _sharesAmount) public returns (uint256 newTotalShares) {
         return _burnShares(_account, _sharesAmount);
     }
 
-    // // Optional: Function to burn stETH and retrieve ETH.
-    // function burnAndRetrieveETH(uint256 amount) external {
-    //     require(balanceOf(msg.sender) >= amount, "Insufficient balance");
-    //     uint256 ethAmount = (amount * address(this).balance) / totalSupply();
-    //     payable(msg.sender).transfer(ethAmount);
-    //     _burn(msg.sender, amount);
-    // }
-
-    // // Internal function to burn stETH.
-    // function _burn(address account, uint256 amount) internal override {
-    //     shares[account] -= (amount * totalShares) / totalSupply();
-    //     totalShares -= (amount * totalShares) / totalSupply();
-    //     super._burn(account, amount);
-    // }
-
     //////////////////////////
-    // Getter Functions
+    // Permit Functions    //
     //////////////////////////
 
-    // function getSharesByPooledEth(uint256 _pooledEthAmount) public view returns (uint256) {
-    //     return _pooledEthAmount * totalShares / totalPooledEther;
-    // }
+    /*//////////////////////////////////////////////////////////////
+                            EIP-2612 STORAGE
+    //////////////////////////////////////////////////////////////*/
 
-    // function getPooledEthByShares(uint256 _sharesAmount) public view returns (uint256) {
-    //     return _sharesAmount * totalPooledEther / totalShares;
-    // }
+    uint256 internal immutable INITIAL_CHAIN_ID;
+
+    bytes32 internal immutable INITIAL_DOMAIN_SEPARATOR;
+
+    mapping(address => uint256) public nonces;
+
+    /*//////////////////////////////////////////////////////////////
+                             EIP-2612 LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+        virtual
+    {
+        require(deadline >= block.timestamp, "PERMIT_DEADLINE_EXPIRED");
+
+        // Unchecked because the only math done is incrementing
+        // the owner's nonce which cannot realistically overflow.
+        unchecked {
+            address recoveredAddress = ecrecover(
+                keccak256(
+                    abi.encodePacked(
+                        "\x19\x01",
+                        DOMAIN_SEPARATOR(),
+                        keccak256(
+                            abi.encode(
+                                keccak256(
+                                    "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+                                ),
+                                owner,
+                                spender,
+                                value,
+                                nonces[owner]++,
+                                deadline
+                            )
+                        )
+                    )
+                ),
+                v,
+                r,
+                s
+            );
+
+            require(recoveredAddress != address(0) && recoveredAddress == owner, "INVALID_SIGNER");
+
+            allowances[recoveredAddress][spender] = value;
+        }
+
+        emit Approval(owner, spender, value);
+    }
+
+    function DOMAIN_SEPARATOR() public view virtual returns (bytes32) {
+        return block.chainid == INITIAL_CHAIN_ID ? INITIAL_DOMAIN_SEPARATOR : computeDomainSeparator();
+    }
+
+    function computeDomainSeparator() internal view virtual returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(bytes(name)),
+                keccak256("2"),
+                block.chainid
+            )
+        );
+    }
 }
