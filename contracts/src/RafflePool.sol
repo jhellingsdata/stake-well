@@ -25,10 +25,8 @@
 pragma solidity ^0.8.20;
 
 import {IERC20Permit} from "./IERC20Permit.sol";
-import {VRFCoordinatorV2Interface} from
-    "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import {VRFConsumerBaseV2} from
-    "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -50,9 +48,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     error RafflePool__StEthTransferFailed();
     error RafflePool__WithdrawalFailed();
     error RafflePool__InsufficientStEthBalance();
-    error RafflePool__UpkeepNotNeeded(
-        uint256 raffleBalance, uint256 raffleState
-    );
+    error RafflePool__UpkeepNotNeeded(uint256 raffleBalance, uint256 raffleState);
 
     ///////////////////
     // Type Declarations
@@ -71,10 +67,17 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // State Variables
     ///////////////////
+    IERC20Permit private immutable i_stETH;
+    /* VRF Variables */
+    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     // uint32 private constant NUM_WORDS = 1;
+    uint32 private immutable i_callbackGasLimit;
+    uint32 private immutable i_numWords; // Can change to facilitate multi-strategy raffles, e.g. multiple winners
+    uint64 private immutable i_subscriptionId;
+    bytes32 private immutable i_gasLane;
 
-    IERC20Permit private immutable i_stETH;
+    /* Raffle Variables */
     uint256 private s_totalUserDeposits;
     uint256 private s_stakingRewardsTotal;
     address[] private s_activeUsers;
@@ -88,11 +91,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
     // @dev Duration of the raffle in seconds
     uint256 private immutable i_interval;
-    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
-    bytes32 private immutable i_gasLane;
-    uint64 private immutable i_subscriptionId;
-    uint32 private immutable i_callbackGasLimit;
-    uint32 private immutable i_numWords; // Will allow multi-strategy raffles, e.g. multiple winners
+
     uint256 private s_lastTimestamp;
     address private s_recentWinner;
     RaffleState private s_raffleState;
@@ -103,7 +102,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     event MintAndDepositSuccessful(address indexed depositor, uint256 amount);
     event WithdrawSuccessful(address indexed withdrawer, uint256 amount);
     event RequestedRaffleWinner(uint256 indexed requestId);
-    event PickedWinner(address indexed winner);
+    event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
 
     ///////////////////
@@ -168,13 +167,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         if (!success) revert RafflePool__StEthTransferFailed();
     }
 
-    function depositStEthWithPermit(
-        uint256 amount,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external moreThanZero(amount) {
+    function depositStEthWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        moreThanZero(amount)
+    {
         _addUser(msg.sender);
         _addBalance(msg.sender, amount);
         _updateBalanceLogs(msg.sender);
@@ -213,12 +209,9 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     function performUpkeep(bytes calldata /* performData */ ) external {
         (bool upkeepNeeded,) = checkUpkeep("");
         if (!upkeepNeeded) {
-            revert RafflePool__UpkeepNotNeeded(
-                s_stakingRewardsTotal, uint256(s_raffleState)
-            );
+            revert RafflePool__UpkeepNotNeeded(s_stakingRewardsTotal, uint256(s_raffleState));
         }
-        s_stakingRewardsTotal =
-            i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
+        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         s_raffleState = RaffleState.CALCULATING;
         i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gas lane
@@ -287,37 +280,24 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
     function _updateBalanceLogs(address userAddress) internal {
         s_lastActiveTimestamp[userAddress] = block.timestamp; // May be rudundant
-        s_userTwabs[userAddress].push(
-            BalanceLog({
-                balance: s_userDeposit[userAddress],
-                timestamp: block.timestamp
-            })
-        );
-        s_totalDepositTwabs.push(
-            BalanceLog(s_totalUserDeposits, block.timestamp)
-        );
+        s_userTwabs[userAddress].push(BalanceLog({balance: s_userDeposit[userAddress], timestamp: block.timestamp}));
+        s_totalDepositTwabs.push(BalanceLog(s_totalUserDeposits, block.timestamp));
     }
 
-    function fulfillRandomWords(
-        uint256, /* requestId */
-        uint256[] memory randomWords
-    ) internal override {
+    function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
         // 1. Calculate the sum of all TWABs for the time period of interest (`totalTWAB`).
         // 2. Scale the random number from Chainlink VRF to the range `[0, totalTWAB]` using modulo (`%`). This will give us a "ticket number" in the virtual array.
         // 3. Iterate over users, summing their TWABs, until the sum exceeds the ticket number. The current user is the winner.
 
-        uint256 totalTwab =
-            calculateTwab(address(0), s_lastTimestamp, block.timestamp);
-        uint256 scaledNumber = randomWords[0] % totalTwab;
+        uint256 totalTwab = calculateTwab(address(0), s_lastTimestamp, block.timestamp);
+        uint256 scaledNumber = (randomWords[0] % totalTwab);
         // Initialise a running total of TWABs
         uint256 runningTotal = 0;
         address winner;
         for (uint256 i = 0; i < s_activeUsers.length; i++) {
             // Calculate TWAB only if a winner has not been found
             if (winner == address(0)) {
-                runningTotal += calculateTwab(
-                    s_activeUsers[i], s_lastTimestamp, block.timestamp
-                );
+                runningTotal += calculateTwab(s_activeUsers[i], s_lastTimestamp, block.timestamp);
                 // If the running total exceeds the ticket number and a winner has not yet been determined, set this user as the winner
                 if (runningTotal > scaledNumber && winner == address(0)) {
                     winner = s_activeUsers[i];
@@ -337,7 +317,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         // ToDo: consider case if winning user has 0 balance, will still have been removed from active users list
         s_userDeposit[winner] += s_stakingRewardsTotal;
         s_recentWinner = winner;
-        emit PickedWinner(winner);
+        emit PickedWinner(winner, s_stakingRewardsTotal);
     }
 
     // // This function can be called before updating the s_userDeposit for a deposit operation
@@ -366,11 +346,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     // }
 
     // Temporarily public
-    function calculateTwab(
-        address userAddress,
-        uint256 s_startTime,
-        uint256 s_endTime
-    ) public view returns (uint256) {
+    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
         BalanceLog[] storage twabs; // pointer to storage-based arrays
         if (userAddress == address(0)) {
             twabs = s_totalDepositTwabs;
@@ -382,13 +358,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
         uint256 balanceCumulative = 0;
         uint256 prevTimestamp = s_startTime;
-        uint256 prevBalance = precedingIndex == type(uint256).max
-            ? 0
-            : twabs[precedingIndex].balance;
+        uint256 prevBalance = precedingIndex == type(uint256).max ? 0 : twabs[precedingIndex].balance;
 
         // Start loop from 0 if precedingIndex is max, otherwise from precedingIndex + 1
-        uint256 loopStart =
-            (precedingIndex == type(uint256).max) ? 0 : precedingIndex + 1;
+        uint256 loopStart = (precedingIndex == type(uint256).max) ? 0 : precedingIndex + 1;
 
         for (uint256 i = loopStart; i < twabs.length; i++) {
             if (twabs[i].timestamp > s_endTime) {
@@ -408,10 +381,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         return balanceCumulative / (s_endTime - s_startTime);
     }
 
-    function findPrecedingTimestampIndex(
-        BalanceLog[] storage twabs,
-        uint256 _s_lastTimestamp
-    ) internal view returns (uint256) {
+    function findPrecedingTimestampIndex(BalanceLog[] storage twabs, uint256 _s_lastTimestamp)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 result = type(uint256).max; // Initialising with "not found" value
         if (twabs.length == 0) {
             return result; // Empty array case
@@ -503,11 +477,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     // Temporary getters
-    function getUserBalanceLog(address user)
-        external
-        view
-        returns (BalanceLog[] memory)
-    {
+    function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
         return s_userTwabs[user];
     }
 
