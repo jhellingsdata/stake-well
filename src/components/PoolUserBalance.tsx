@@ -31,15 +31,34 @@ function ViewUserBalance({ decimals }: ViewUserBalanceProps) {
     })
 
     const formatBalance = (balance: bigint) => {
-        let etherString = formatEther(balance);
-        return parseFloat(etherString).toFixed(decimals);
+        // If balance is 0, default decimals to 0
+        if (balance === 0n) {
+            return '0'
+        }
+        let etherString = balance.toString();
+        if (etherString.length <= decimals) {
+            return '0.' + etherString.padStart(decimals, '0');
+        }
+        return (
+            etherString.slice(0, -decimals) +
+            '.' +
+            etherString.slice(-decimals).slice(0, decimals)
+        )
     }
-
+    // <div>
+    //     Total stETH balance: {' '}
+    //     {isLoading ? 'Loading...' : data ? formatBalance(data) : 'Data not available'}
+    //     <button onClick={() => refetch()}>
+    //         {isLoading ? 'fetching...' : 'fetch'}
+    //     </button>
+    //     {error && <div>{(error as BaseError).shortMessage}</div>}
+    // </div>
+    console.log(data)
     return (
         <div>
-            stETH balance: {isSuccess && data ? formatBalance(data) : 'Loading...'}
+            stETH balance: {isLoading ? 'Loading...' : isSuccess ? formatBalance(data!) : 'Loading...'}
             <button onClick={() => refetch()}>
-                {isLoading ? 'fetching...' : 'fetch'}
+                {isRefetching ? 'fetching...' : 'fetch'}
             </button>
             {error && <div>{(error as BaseError).shortMessage}</div>}
         </div>

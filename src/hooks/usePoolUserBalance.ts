@@ -1,10 +1,10 @@
 import { type Address, useAccount } from 'wagmi'
-import { useStakePoolBalanceOf } from '../generated'
+import { useRafflePoolGetUserDeposit } from '../generated'
 
 function usePoolUserBalance() {
     const { address } = useAccount()
 
-    const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useStakePoolBalanceOf({
+    const { data, error, isLoading, isSuccess, isError, refetch, isRefetching } = useRafflePoolGetUserDeposit({
         args: [address as Address],
         enabled: Boolean(address),
     })

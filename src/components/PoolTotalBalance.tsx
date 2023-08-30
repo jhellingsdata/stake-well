@@ -34,7 +34,6 @@ function TotalBalance({ decimals }: TotalBalanceProps) {
         )
     }
 
-    console.log(data)
     return (
         <div>
             Total stETH balance: {' '}

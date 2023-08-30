@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { parseEther, BaseError, formatEther } from 'viem'
 import { usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
-import { useStakePoolWithdrawStEth, usePrepareStakePoolWithdrawStEth } from '../generated'
+import { useRafflePoolGetUserDeposit, useRafflePoolWithdrawStEth, usePrepareRafflePoolWithdrawStEth } from '../generated'
 import { type Address, useBalance, useAccount } from 'wagmi'
 
 /* Custom Components */
@@ -29,10 +29,16 @@ function WithdrawStEth() {
     const { balance } = usePoolUserBalance()
 
     const { address } = useAccount()
-    const { data: userBalance, isLoading: isUserBalanceLoading } = useBalance({
+    const { data: userWalletBalance, isLoading: isUserWalletBalanceLoading } = useBalance({
         address: address as Address,
         watch: true,
     })
+
+    // const { data: userDepositBalance, isLoading: isUserDepositBalanceLoading } = useRafflePoolGetUserDeposit({
+    //     args: [address as Address],
+    //     enabled: Boolean(address),
+    //     watch: true,
+    // })
 
     const [value, setValue] = useState('')
     const [isValid, setIsValid] = useState(false);
@@ -47,15 +53,17 @@ function WithdrawStEth() {
         setValue(balance ? formatEther(balance) : '0') // Convert BigInt to string, adjust as needed
     }
 
-    const { config } = usePrepareStakePoolWithdrawStEth({
+    const { config } = usePrepareRafflePoolWithdrawStEth({
         args: [debouncedValue ? parseEther(debouncedValue) : BigInt(0)],
         enabled: Boolean(debouncedValue),
     })
 
-    const { write, data, error, isLoading, isError } = useStakePoolWithdrawStEth(config)
+    const { write, data, error, isLoading, isError } = useRafflePoolWithdrawStEth(config)
 
     const { data: receipt, isLoading: isPending, isSuccess } = useWaitForTransaction({ hash: data?.hash })
 
+    console.log(balance)
+    console.log(userWalletBalance)
     return (
         <>
             <form
