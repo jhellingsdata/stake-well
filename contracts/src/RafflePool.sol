@@ -24,7 +24,7 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC20Permit} from "./IERC20Permit.sol";
+import {IERC20Permit} from "./interfaces/IERC20Permit.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -44,6 +44,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     error RafflePool__NeedsMoreThanZero();
     error RafflePool__MintFailed();
+    error RafflePool__RaffleDrawInProgress();
     error RafflePool__InsufficientAllowance();
     error RafflePool__StEthTransferFailed();
     error RafflePool__WithdrawalFailed();
@@ -99,8 +100,9 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // Events
     ///////////////////
-    event MintAndDepositSuccessful(address indexed depositor, uint256 amount);
-    event WithdrawSuccessful(address indexed withdrawer, uint256 amount);
+    event MintAndDepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event DepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event WithdrawSuccessful(address indexed withdrawer, uint256 amount, uint256 newBalance);
     event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
@@ -145,6 +147,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     * @notice Likely need to add reentrancy guard, can't follow checks-effects-interactions pattern
     */
     function depositEth() external payable moreThanZero(msg.value) {
+        _checkRaffleState();
         _addUser(msg.sender);
         uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         (bool success,) = address(i_stETH).call{value: msg.value}("");
@@ -153,42 +156,53 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         uint256 actualMintedAmount = afterDeposit - beforeDeposit;
         _addBalance(msg.sender, actualMintedAmount);
         _updateBalanceLogs(msg.sender);
-        emit MintAndDepositSuccessful(msg.sender, actualMintedAmount);
+        emit MintAndDepositSuccessful(msg.sender, actualMintedAmount, s_userDeposit[msg.sender]);
     }
 
     function depositStEth(uint256 amount) external moreThanZero(amount) {
+        _checkRaffleState();
         // Ensure the allowance is sufficient
         uint256 allowance = i_stETH.allowance(msg.sender, address(this));
         if (allowance < amount) revert RafflePool__InsufficientAllowance();
         _addUser(msg.sender);
-        _addBalance(msg.sender, amount);
-        _updateBalanceLogs(msg.sender);
+        uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
         if (!success) revert RafflePool__StEthTransferFailed();
+        uint256 afterDeposit = i_stETH.balanceOf(address(this));
+        uint256 actualAmount = afterDeposit - beforeDeposit;
+        _addBalance(msg.sender, actualAmount);
+        _updateBalanceLogs(msg.sender);
+        emit DepositSuccessful(msg.sender, actualAmount, s_userDeposit[msg.sender]);
     }
 
     function depositStEthWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
         moreThanZero(amount)
     {
+        _checkRaffleState();
         _addUser(msg.sender);
-        _addBalance(msg.sender, amount);
-        _updateBalanceLogs(msg.sender);
+        uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         i_stETH.permit(msg.sender, address(this), amount, deadline, v, r, s);
         bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
         if (!success) revert RafflePool__StEthTransferFailed();
+        uint256 afterDeposit = i_stETH.balanceOf(address(this));
+        uint256 actualAmount = afterDeposit - beforeDeposit;
+        _addBalance(msg.sender, actualAmount);
+        _updateBalanceLogs(msg.sender);
+        emit DepositSuccessful(msg.sender, actualAmount, s_userDeposit[msg.sender]);
     }
 
     function withdrawStEth(uint256 amount) external moreThanZero(amount) {
         if (s_userDeposit[msg.sender] < amount) {
             revert RafflePool__InsufficientStEthBalance();
         }
+        _checkRaffleState();
         // Update user deposit balance & total deposit balance & logs
         _subtractBalance(msg.sender, amount);
         _updateBalanceLogs(msg.sender);
         bool success = i_stETH.transfer(msg.sender, amount);
         if (!success) revert RafflePool__WithdrawalFailed();
-        emit WithdrawSuccessful(msg.sender, amount);
+        emit WithdrawSuccessful(msg.sender, amount, s_userDeposit[msg.sender]);
     }
 
     function pickWinner() external onlyOwner {
@@ -208,10 +222,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
     function performUpkeep(bytes calldata /* performData */ ) external {
         (bool upkeepNeeded,) = checkUpkeep("");
+        uint256 stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         if (!upkeepNeeded) {
-            revert RafflePool__UpkeepNotNeeded(s_stakingRewardsTotal, uint256(s_raffleState));
+            revert RafflePool__UpkeepNotNeeded(stakingRewardsTotal, uint256(s_raffleState));
         }
-        s_stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
+        s_stakingRewardsTotal = stakingRewardsTotal;
         s_raffleState = RaffleState.CALCULATING;
         i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gas lane
@@ -252,9 +267,9 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     {
         bool timePassed = (block.timestamp - s_lastTimestamp) >= i_interval;
         bool isOpen = RaffleState.OPEN == s_raffleState;
-        bool hasBalance = s_stakingRewardsTotal > 0;
-        bool hasUsers = s_activeUsers.length > 0;
-        upkeepNeeded = timePassed && isOpen && hasBalance && hasUsers;
+        bool hasPrize = (i_stETH.balanceOf(address(this)) - s_totalUserDeposits > 0);
+        // bool hasPrize = stakingRewardsTotal > 0;
+        upkeepNeeded = timePassed && isOpen && hasPrize;
         return (upkeepNeeded, "0x0");
     }
 
@@ -319,31 +334,6 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         s_recentWinner = winner;
         emit PickedWinner(winner, s_stakingRewardsTotal);
     }
-
-    // // This function can be called before updating the s_userDeposit for a deposit operation
-    // function _addPlayer(address _user) internal {
-    //     if (s_userDeposit[_user] == 0) {
-    //         s_activeUsers.push(_user);
-    //         s_playerIndex[_user] = s_activeUsers.length; // Arrays are 1-indexed in the context of this solution
-    //     }
-    // }
-
-    // // This function can be called after updating the s_userDeposit for a withdrawal operation
-    // function _removePlayer(address _user) internal {
-    //     if (s_userDeposit[_user] == 0) {
-    //         uint256 indexToRemove = s_playerIndex[_user] - 1; // Adjust for 0-indexed array
-    //         address lastAddress = s_activeUsers[s_activeUsers.length - 1];
-
-    //         // Swap with the last element if not already the last one
-    //         if (indexToRemove != s_activeUsers.length - 1) {
-    //             s_activeUsers[indexToRemove] = lastAddress;
-    //             s_playerIndex[lastAddress] = indexToRemove + 1; // Adjust for 1-indexed mapping
-    //         }
-
-    //         s_activeUsers.pop();
-    //         delete s_playerIndex[_user];
-    //     }
-    // }
 
     // Temporarily public
     function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
@@ -418,6 +408,12 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
     // internal & private view & pure functions
 
+    function _checkRaffleState() internal view {
+        if (s_raffleState != RaffleState.OPEN) {
+            revert RafflePool__RaffleDrawInProgress();
+        }
+    }
+
     // Swap the roles of s_activeUsers and s_tempActiveUsers
     function _cleanupUsers() internal {
         // define new storage pointer variable temp & make it point to where s_activeUsers currently points in storage
@@ -476,12 +472,24 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         return s_recentWinner;
     }
 
+    function getLastTimestamp() external view returns (uint256) {
+        return s_lastTimestamp;
+    }
+
     // Temporary getters
     function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
         return s_userTwabs[user];
     }
 
+    function getLastUserBalanceLog(address user) external view returns (BalanceLog memory) {
+        return s_userTwabs[user][s_userTwabs[user].length - 1];
+    }
+
     function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
         return s_totalDepositTwabs;
+    }
+
+    function getLastTotalBalanceLog() external view returns (BalanceLog memory) {
+        return s_totalDepositTwabs[s_totalDepositTwabs.length - 1];
     }
 }

@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import {IERC20Permit} from "../../src/IERC20Permit.sol";
+import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 
 contract StEthMock is IERC20Permit {
     // Represents the internal shares used to calculate balances.

@@ -25,7 +25,7 @@ pragma solidity ^0.8.19;
 
 // import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 // import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
-import "./IERC20Permit.sol";
+import "./interfaces/IERC20Permit.sol";
 
 // Contract should only hold stETH, but users should be able to deposit ETH or stETH.
 // If a user deposits ETH, the contract should convert it to stETH by calling Lido's stETH contract.

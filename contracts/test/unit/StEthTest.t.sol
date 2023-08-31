@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test, console} from "../../lib/forge-std/src/Test.sol";
 import {StdUtils} from "../../lib/forge-std/src/StdUtils.sol";
 import {StdCheats} from "../../lib/forge-std/src/StdCheats.sol";
-import {IERC20Permit} from "../../src/IERC20Permit.sol";
+import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 import {SigUtils} from "../mocks/utils/SigUtils.sol";
 
 import {StEthMock} from "../mocks/StEthToken.sol";
@@ -115,7 +115,7 @@ contract StEthTest is StdCheats, Test {
 
     function test_Permit() public getStEth(OWNER) {
         SigUtils.Permit memory permit =
-            SigUtils.Permit({owner: OWNER, spender: spender, value: 1e18, nonce: 0, deadline: 1 days});
+            SigUtils.Permit({owner: OWNER, spender: spender, value: 1e18, nonce: 0, deadline: block.timestamp + 1 days});
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
@@ -129,7 +129,7 @@ contract StEthTest is StdCheats, Test {
 
     function test_TransferFromLimitedPermit() public getStEth(OWNER) {
         SigUtils.Permit memory permit =
-            SigUtils.Permit({owner: OWNER, spender: spender, value: 1e18, nonce: 0, deadline: 1 days});
+            SigUtils.Permit({owner: OWNER, spender: spender, value: 1e18, nonce: 0, deadline: block.timestamp + 1 days});
 
         bytes32 digest = sigUtils.getTypedDataHash(permit);
 
