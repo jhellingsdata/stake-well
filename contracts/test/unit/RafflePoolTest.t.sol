@@ -12,7 +12,7 @@ import {CreateSubscription} from "../../script/Interactions.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "../mocks/VRFCoordinatorV2Mock.sol";
 import {RafflePool} from "../../src/RafflePool.sol";
-import {IERC20Permit} from "../../src/IERC20Permit.sol";
+import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 import {StEthMock} from "../mocks/StEthToken.sol";
 import {SigUtils} from "../mocks/utils/SigUtils.sol";
 
@@ -20,8 +20,9 @@ contract RafflePoolTest is StdCheats, Test {
     ///////////////////
     // Events
     ///////////////////
-    event MintAndDepositSuccessful(address indexed depositor, uint256 amount);
-    event WithdrawSuccessful(address indexed withdrawer, uint256 amount);
+    event MintAndDepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event DepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event WithdrawSuccessful(address indexed withdrawer, uint256 amount, uint256 newBalance);
     event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
@@ -89,6 +90,13 @@ contract RafflePoolTest is StdCheats, Test {
         _;
     }
 
+    modifier getAndDepositStEth(address _address, uint256 _amount) {
+        vm.prank(_address);
+        (bool success,) = address(steth).call{value: STARTING_USER_BALANCE}("");
+        _depositStEthToRafflePool(_address, _amount);
+        _;
+    }
+
     /////////////////////////
     // Helper Functions   //
     ////////////////////////
@@ -118,6 +126,25 @@ contract RafflePoolTest is StdCheats, Test {
     }
 
     //////////////////////////
+    // Misc                 //
+    //////////////////////////
+
+    function testRafflePoolGetLastTimestamp() public {
+        uint256 lastTimestamp = rafflePool.getLastTimestamp();
+        assertEq(lastTimestamp, block.timestamp);
+    }
+
+    function testStEthRebase() public getStEth(PLAYER) {
+        uint256 preRebaseUserBalance = StEth.balanceOf(PLAYER);
+        uint256 preRebaseTotalBalance = StEth.getTotalPooledEther();
+        StEth.rebase();
+        uint256 postRebaseUserBalance = StEth.balanceOf(PLAYER);
+        uint256 postRebaseTotalBalance = StEth.getTotalPooledEther();
+        assertGt(postRebaseUserBalance, preRebaseUserBalance);
+        assertGt(postRebaseTotalBalance, preRebaseTotalBalance);
+    }
+
+    //////////////////////////
     // Deposit ETH          //
     //////////////////////////
     function testRafflePoolRevertsWhenDepositingEthWithZeroValue() public {
@@ -144,7 +171,7 @@ contract RafflePoolTest is StdCheats, Test {
     function testRafflePoolEmitsDepositEvent() public {
         vm.prank(PLAYER);
         vm.expectEmit(true, false, false, true, address(rafflePool));
-        emit MintAndDepositSuccessful(PLAYER, STARTING_USER_BALANCE - 1);
+        emit MintAndDepositSuccessful(PLAYER, STARTING_USER_BALANCE - 1, STARTING_USER_BALANCE - 1);
         rafflePool.depositEth{value: STARTING_USER_BALANCE}();
     }
 
@@ -167,8 +194,18 @@ contract RafflePoolTest is StdCheats, Test {
     function testRafflePoolDepositRevertsWhenRaffleIsCalculating() public {
         vm.prank(PLAYER);
         rafflePool.depositEth{value: STARTING_USER_BALANCE}();
-        vm.warp(block.timestamp + 7 days + 1);
+        // warp time forward 7 days and rebase steth each day
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+        rafflePool.performUpkeep("");
         // Need to kick off checkUpkeep to get into calculating state
+        vm.startPrank(USER1);
+        vm.expectRevert(RafflePool.RafflePool__RaffleDrawInProgress.selector);
+        rafflePool.depositEth{value: STARTING_USER_BALANCE}();
+        vm.stopPrank();
     }
 
     //////////////////////////
@@ -268,17 +305,31 @@ contract RafflePoolTest is StdCheats, Test {
 
     function testRafflePoolAllowsWithdrawalOfStEth() public getStEth(PLAYER) {
         // Arrange
-        vm.startPrank(PLAYER);
-        StEth.approve(address(rafflePool), 10e18);
-        rafflePool.depositStEth(StEth.balanceOf(PLAYER));
-        uint256 preUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
+        uint256 preDepositUserWalletBalance = StEth.balanceOf(PLAYER);
+        _depositStEthToRafflePool(PLAYER, STARTING_USER_BALANCE);
+        uint256 postDepositUserBalance = rafflePool.getUserDeposit(PLAYER);
         // Act
-        rafflePool.withdrawStEth(preUserDepositBalance);
-        vm.stopPrank();
-        uint256 postUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
+        vm.prank(PLAYER);
+        rafflePool.withdrawStEth(postDepositUserBalance);
+        uint256 postWithdrawUserBalance = rafflePool.getUserDeposit(PLAYER);
         // Assert
-        assertEq(preUserDepositBalance, postUserDepositBalance + preUserDepositBalance);
-        assertApproxEqAbs(StEth.balanceOf(PLAYER), STARTING_USER_BALANCE, 2 wei);
+        assertEq(postDepositUserBalance, postWithdrawUserBalance + postDepositUserBalance);
+        assertApproxEqAbs(StEth.balanceOf(PLAYER), preDepositUserWalletBalance, 2 wei);
+    }
+
+    function testRafflePoolRecordsWithdrawalOfStEth() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, STARTING_USER_BALANCE);
+        uint256 postDepositUserBalance = rafflePool.getUserDeposit(PLAYER);
+        uint256 postDepositTotalBalance = StEth.balanceOf(address(rafflePool));
+
+        vm.prank(PLAYER);
+        rafflePool.withdrawStEth(postDepositUserBalance);
+        uint256 postWithdrawUserBalance = rafflePool.getUserDeposit(PLAYER);
+        uint256 postWithdrawTotalBalance = StEth.balanceOf(address(rafflePool));
+
+        assertEq(postDepositUserBalance, postDepositTotalBalance);
+        assertEq(postWithdrawUserBalance, 0);
+        assertApproxEqAbs(postWithdrawTotalBalance, 0, 2 wei);
     }
 
     function testRafflePoolRevertsWhenWithdrawingAmountGreaterThanBalance() public getStEth(PLAYER) {
@@ -353,24 +404,100 @@ contract RafflePoolTest is StdCheats, Test {
             assertEq(balanceLogs[i].timestamp, balanceTimestamps[i]);
         }
     }
+
     //////////////////////////
-    // Misc                 //
+    // CheckUpkeep          //
     //////////////////////////
 
-    function testRafflePoolGetLastTimestamp() public {
-        uint256 lastTimestamp = rafflePool.getLastTimestamp();
-        assertEq(lastTimestamp, block.timestamp);
+    function testCheckUpkeepReturnsFalseIfNotEnoughTimePassed() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp - 1);
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, false);
     }
 
-    function testStEthRebase() public getStEth(PLAYER) {
-        uint256 preRebaseUserBalance = StEth.balanceOf(PLAYER);
-        uint256 preRebaseTotalBalance = StEth.getTotalPooledEther();
-        StEth.rebase();
-        uint256 postRebaseUserBalance = StEth.balanceOf(PLAYER);
-        uint256 postRebaseTotalBalance = StEth.getTotalPooledEther();
-        assertGt(postRebaseUserBalance, preRebaseUserBalance);
-        assertGt(postRebaseTotalBalance, preRebaseTotalBalance);
+    function testCheckUpkeepReturnsFalseIfNoPrize() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        vm.warp(block.timestamp + 7 days + 1);
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, false);
     }
+
+    function testCheckUpkeepReturnsFalseIfRaffleNotOpen() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+        rafflePool.performUpkeep("");
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, false);
+    }
+
+    function testCheckUpkeepReturnsTrueIfAllParametersGood() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, true);
+    }
+
+    //////////////////////////
+    // PerformUpkeep        //
+    //////////////////////////
+    function testPerformUpkeepCanOnlyRunWhenCheckUpkeepIsTrue() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+
+        rafflePool.performUpkeep("");
+    }
+
+    function testPerformUpkeepRevertsWhenCheckUpkeepIsFalse() public getStEth(PLAYER) {
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        vm.warp(block.timestamp + 7 days + 1);
+        uint256 currentPrize = 0;
+        uint256 raffleState = 0;
+        // We expect `performUpkeep` to revert with the following error code & error parameters:
+        vm.expectRevert(
+            abi.encodeWithSelector(RafflePool.RafflePool__UpkeepNotNeeded.selector, currentPrize, raffleState)
+        );
+        rafflePool.performUpkeep("");
+    }
+
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public getAndDepositStEth(PLAYER, 1 ether) {}
+
+    //////////////////////////
+    // Events              //
+    //////////////////////////
+
+    // function testStEthTransfer() public getStEth(PLAYER) {
+    //     uint256 preTransferUserBalance = StEth.balanceOf(PLAYER);
+    //     uint256 preTransferUserShares = StEth.sharesOf(PLAYER);
+    //     uint256 preTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
+    //     uint256 preTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
+    //     _depositStEthToRafflePool(PLAYER, 2 ether);
+    //     uint256 postTransferUserBalance = StEth.balanceOf(PLAYER);
+    //     uint256 postTransferUserShares = StEth.sharesOf(PLAYER);
+    //     uint256 postTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
+    //     uint256 postTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
+
+    //     console.log("User Balance Change: -", preTransferUserBalance - postTransferUserBalance);
+    //     console.log("User Shares Change: -", preTransferUserShares - postTransferUserShares);
+    //     console.log("RafflePool Balance Change: +", postTransferRafflePoolBalance - preTransferRafflePoolBalance);
+    //     console.log("RafflePool Shares Change: +", postTransferRafflePoolShares - preTransferRafflePoolShares);
+    // }
 
     function testERC20TransferWithoutFunctionCall() public {}
 
