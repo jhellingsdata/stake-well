@@ -50,6 +50,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     error RafflePool__WithdrawalFailed();
     error RafflePool__InsufficientStEthBalance();
     error RafflePool__UpkeepNotNeeded(uint256 raffleBalance, uint256 raffleState);
+    error RafflePool__ExceedsMaxProtocolFee();
 
     ///////////////////
     // Type Declarations
@@ -79,22 +80,22 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     bytes32 private immutable i_gasLane;
 
     /* Raffle Variables */
+    uint256 private immutable i_interval; // raffle duration
+    uint256 private s_lastTimestamp; // timestamp of last raffle draw
     uint256 private s_totalUserDeposits;
     uint256 private s_stakingRewardsTotal;
+    uint256 private s_platformFee;
+    uint256 private s_platformFeeBalance;
+    address private s_recentWinner;
     address[] private s_activeUsers;
     address[] private s_tempActiveUsers;
     mapping(address => uint256) private s_userDeposit;
-    mapping(address => uint256) private s_lastActiveTimestamp;
+    // mapping(address => uint256) private s_lastActiveTimestamp;
 
     // map user address to BalanceLogs array, to be updated with each transaction
     mapping(address => BalanceLog[]) private s_userTwabs;
     BalanceLog[] private s_totalDepositTwabs; // array for tracking total deposit balance over time
 
-    // @dev Duration of the raffle in seconds
-    uint256 private immutable i_interval;
-
-    uint256 private s_lastTimestamp;
-    address private s_recentWinner;
     RaffleState private s_raffleState;
 
     ///////////////////
@@ -106,6 +107,8 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
+    event ProtocolFeeWithdrawn(uint256 amount);
+    event ProtocolFeeAdjusted(uint256 newFee);
 
     ///////////////////
     // Modifiers
@@ -143,9 +146,6 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // External Functions
     ///////////////////
-    /*
-    * @notice Likely need to add reentrancy guard, can't follow checks-effects-interactions pattern
-    */
     function depositEth() external payable moreThanZero(msg.value) {
         _checkRaffleState();
         _addUser(msg.sender);
@@ -160,10 +160,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     function depositStEth(uint256 amount) external moreThanZero(amount) {
-        _checkRaffleState();
         // Ensure the allowance is sufficient
         uint256 allowance = i_stETH.allowance(msg.sender, address(this));
         if (allowance < amount) revert RafflePool__InsufficientAllowance();
+        _checkRaffleState();
         _addUser(msg.sender);
         uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
@@ -205,24 +205,12 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         emit WithdrawSuccessful(msg.sender, amount, s_userDeposit[msg.sender]);
     }
 
-    function pickWinner() external onlyOwner {
-        // if ((block.timestamp - s_lastTimestamp) < i_interval) {
-        //     revert();
-        // }
-        s_raffleState = RaffleState.CALCULATING;
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
-            i_gasLane, // gas lane
-            i_subscriptionId, // id that's funded with link
-            REQUEST_CONFIRMATIONS,
-            i_callbackGasLimit,
-            i_numWords
-        );
-        emit RequestedRaffleWinner(requestId);
-    }
-
     function performUpkeep(bytes calldata /* performData */ ) external {
         (bool upkeepNeeded,) = checkUpkeep("");
         uint256 stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
+        // split staking rewards between platform fee and raffle prize
+        s_platformFeeBalance += (stakingRewardsTotal * s_platformFee) / 10000;
+        stakingRewardsTotal -= s_platformFeeBalance;
         if (!upkeepNeeded) {
             revert RafflePool__UpkeepNotNeeded(stakingRewardsTotal, uint256(s_raffleState));
         }
@@ -235,6 +223,18 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
             i_callbackGasLimit,
             i_numWords
         );
+    }
+
+    function withdrawPlatformFee() external onlyOwner {
+        uint256 platformFeeBalance = s_platformFeeBalance;
+        s_platformFeeBalance = 0;
+        bool success = i_stETH.transfer(msg.sender, platformFeeBalance);
+        if (!success) revert RafflePool__WithdrawalFailed();
+        emit ProtocolFeeWithdrawn(platformFeeBalance);
+    }
+
+    function adjustPlatformFee(uint256 newFee) external onlyOwner {
+        _adjustPlatformFee(newFee);
     }
 
     ///////////////////
@@ -294,9 +294,18 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     function _updateBalanceLogs(address userAddress) internal {
-        s_lastActiveTimestamp[userAddress] = block.timestamp; // May be rudundant
+        // s_lastActiveTimestamp[userAddress] = block.timestamp; // May be rudundant
         s_userTwabs[userAddress].push(BalanceLog({balance: s_userDeposit[userAddress], timestamp: block.timestamp}));
         s_totalDepositTwabs.push(BalanceLog(s_totalUserDeposits, block.timestamp));
+    }
+
+    function _adjustPlatformFee(uint256 newFee) internal {
+        // fee must be between 0 -> 15%
+        if (newFee > 1500) {
+            revert RafflePool__ExceedsMaxProtocolFee();
+        }
+        s_platformFee = newFee;
+        emit ProtocolFeeAdjusted(newFee);
     }
 
     function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
@@ -336,7 +345,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     // Temporarily public
-    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
+    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime)
+        internal
+        view
+        returns (uint256)
+    {
         BalanceLog[] storage twabs; // pointer to storage-based arrays
         if (userAddress == address(0)) {
             twabs = s_totalDepositTwabs;
@@ -476,20 +489,28 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         return s_lastTimestamp;
     }
 
-    // Temporary getters
-    function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
-        return s_userTwabs[user];
+    function getPlatformFee() external view returns (uint256) {
+        return s_platformFee;
+    }
+
+    function getPlatformFeeBalance() external view returns (uint256) {
+        return s_platformFeeBalance;
     }
 
     function getLastUserBalanceLog(address user) external view returns (BalanceLog memory) {
         return s_userTwabs[user][s_userTwabs[user].length - 1];
     }
 
-    function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
-        return s_totalDepositTwabs;
-    }
-
     function getLastTotalBalanceLog() external view returns (BalanceLog memory) {
         return s_totalDepositTwabs[s_totalDepositTwabs.length - 1];
     }
+
+    // // Temporary getters
+    // function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
+    //     return s_userTwabs[user];
+    // }
+
+    // function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
+    //     return s_totalDepositTwabs;
+    // }
 }
