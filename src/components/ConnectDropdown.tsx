@@ -10,10 +10,27 @@ export function ConnectDropdown() {
     const { address, connector, isConnected } = useAccount();
     const { connect, connectors, error, isLoading, pendingConnector, reset } = useConnect();
     const { disconnect } = useDisconnect();
-
     const [isDropdownOpen, setDropdownOpen] = useState(false);
-
     const [showError, setShowError] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);  // for changing text on hover
+
+    const { chain } = useNetwork();
+    const { chains, error: switchNetworkError, isLoading: isSwitchNetworkLoading, pendingChainId, switchNetwork } = useSwitchNetwork();
+
+    let buttonTitle = isHovered ? 'Disconnect?' : shortenAddress(address || '0x0000...0000')
+    let buttonAction = () => disconnect()
+    let buttonStyles = 'tracking-wider rounded-3xl bg-[#8c6dfd] text-bold min-w-[165px]'
+    // Check if the currently connected chain is supported or not
+    const supportedChain = chains.find(x => x.id !== chain?.id);
+
+    console.log(supportedChain)
+    if (supportedChain && switchNetwork) {
+        buttonTitle = isSwitchNetworkLoading ? 'Check Wallet...' : `Switch to ${supportedChain.name}`;
+        buttonAction = () => switchNetwork(supportedChain.id);
+        buttonStyles = 'tracking-wide rounded-3xl px-4 bg-red-500 text-normal mr-4 ml-4';
+    }
+
+
 
     // Effect to listen to error changes
     useEffect(() => {
@@ -37,9 +54,11 @@ export function ConnectDropdown() {
             <div>
                 {isConnected ? (
                     <CustomButton
-                        title={shortenAddress(address || '0x0000...0000')}
-                        containerStyles='tracking-wider rounded-3xl bg-[#8c6dfd] text-bold'
-                        handleClick={() => disconnect()}
+                        title={buttonTitle}
+                        containerStyles={buttonStyles}
+                        handleClick={buttonAction}
+                        handleMouseEnter={() => setIsHovered(true)}
+                        handleMouseLeave={() => setIsHovered(false)}
                     />
                 ) : (
                     <>
