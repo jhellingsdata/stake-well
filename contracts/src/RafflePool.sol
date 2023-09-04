@@ -209,8 +209,9 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         (bool upkeepNeeded,) = checkUpkeep("");
         uint256 stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
         // split staking rewards between platform fee and raffle prize
-        s_platformFeeBalance += (stakingRewardsTotal * s_platformFee) / 10000;
-        stakingRewardsTotal -= s_platformFeeBalance;
+        uint256 s_platformFeeAmount = (stakingRewardsTotal * s_platformFee) / 10000;
+        s_platformFeeBalance += s_platformFeeAmount;
+        stakingRewardsTotal -= s_platformFeeAmount;
         if (!upkeepNeeded) {
             revert RafflePool__UpkeepNotNeeded(stakingRewardsTotal, uint256(s_raffleState));
         }
@@ -487,6 +488,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
 
     function getLastTimestamp() external view returns (uint256) {
         return s_lastTimestamp;
+    }
+
+    function getInterval() external view returns (uint256) {
+        return i_interval;
     }
 
     function getPlatformFee() external view returns (uint256) {
