@@ -36,7 +36,7 @@ const Navbar = () => {
             <nav className="w-full max-w-[1440px] mx-auto flex justify-between items-center">
                 <div className="flex">
                     <Link href="/" className="navbar-items font-bold">
-                        Nolo
+                        Stake Well
                     </Link>
                     <Link href="/raffle" className="navbar-items">
                         Raffle
