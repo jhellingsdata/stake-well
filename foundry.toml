@@ -12,6 +12,7 @@ libs = ['contracts/lib', 'contracts/lib/openzeppelin-contracts/contracts']
 cache_path = 'contracts/cache'
 # solc = '0.8.20'
 auto_detect_remappings = true
+gas_reports = ["RafflePool"]
 # ffi = true
 
 [etherscan]
