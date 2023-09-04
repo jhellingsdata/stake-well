@@ -36,7 +36,7 @@ const DualOptionToggle = ({ initialOption = 'ETH', onOptionChange }) => {
 
     return (
         <div>
-            <div>Select Deposit: </div>
+            <div className='pl-0'>Deposit Token</div>
             <div className="relative inline-flex items-center cursor-pointer w-40 h-10">
                 <div
                     className={`absolute left-0 top-0 h-10 w-20 rounded-l-full flex items-center justify-center ${option === 'ETH' ? 'bg-gray-300 text-gray-300' : 'bg-gray-300 text-gray-500'}`}
