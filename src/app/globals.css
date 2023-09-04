@@ -5,7 +5,19 @@
 @layer components {
 
   .custom-btn {
-    @apply flex flex-row relative justify-center items-center py-3 px-6 font-semibold outline-none hover:rounded-xl transition-all duration-200 ease-linear cursor-pointer
+    @apply flex flex-row relative justify-center items-center py-3 px-6 font-semibold outline-none rounded-3xl hover:rounded-xl transition-all duration-200 ease-linear cursor-pointer
+  }
+
+  .hero {
+    @apply flex xl:flex-row flex-col gap-5 relative z-0 max-w-[1440px] mx-auto;
+  }
+
+  .hero__title {
+    @apply 2xl:text-[72px] sm:text-[64px] text-[50px] font-extrabold;
+  }
+  
+  .hero__subtitle {
+    @apply text-[27px] text-slate-100 font-light mt-5;
   }
 
   .navbar-icon {
@@ -32,5 +44,21 @@
     @apply flex flex-col p-6 justify-center items-start bg-violet-50 text-gray-700 hover:shadow-md rounded-3xl
   }
 
+  .background-animate {
+    background-size: 300%;
+    -webkit-animation: backgroundanimate 4s ease infinite alternate;
+    -moz-animation: backgroundanimate 4s ease infinite alternate;
+    animation: backgroundanimate 4s ease infinite alternate;
+  }
+  
+  @keyframes backgroundanimate {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
   
 }
