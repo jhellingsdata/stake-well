@@ -1,0 +1,12 @@
+[book]
+src = "src"
+title = "StakeWell Documentation"
+
+[output.html]
+no-section-label = true
+additional-js = ["solidity.min.js"]
+additional-css = ["book.css"]
+git-repository-url = "https://github.com/jhellingsdata/stake-well"
+
+[output.html.fold]
+enable = true
