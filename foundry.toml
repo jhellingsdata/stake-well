@@ -22,6 +22,13 @@ goerli = { key = "${ETHERSCAN_API_KEY}" }
 [rpc_endpoints]
 goerli = "${GOERLI_RPC_URL}"
 
+# Fuzz run options - adjust as needed for your fuzzing campaign
+[fuzz]
+runs = 1000               # the number of fuzz runs for tests
+max_local_rejects = 66000 # max number of individual inputs that may be rejected before the test aborts
+max_test_rejects = 1      # max number of tests that may be rejected before the test aborts      
+
+
 [fmt]
 # `forge fmt` defaults with line_length reduced from 120 to 80
 line_length = 120
@@ -34,3 +41,7 @@ number_underscore = 'preserve'
 single_line_statement_blocks = 'preserve'
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+
+[doc]
+title = 'StakeWell Documentation'
