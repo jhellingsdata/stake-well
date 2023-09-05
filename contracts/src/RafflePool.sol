@@ -104,11 +104,15 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     event MintAndDepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
     event DepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
     event WithdrawSuccessful(address indexed withdrawer, uint256 amount, uint256 newBalance);
-    event RequestedRaffleWinner(uint256 indexed requestId);
     event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
     event ProtocolFeeWithdrawn(uint256 amount);
     event ProtocolFeeAdjusted(uint256 newFee);
+
+    // temporary for tests
+    event RequestedRaffleWinner(uint256 indexed requestId);
+    event RandomWord(uint256 indexed randomWord);
+    event ScaledRandomNumber(uint256 indexed scaledNum);
 
     ///////////////////
     // Modifiers
@@ -217,13 +221,15 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         }
         s_stakingRewardsTotal = stakingRewardsTotal;
         s_raffleState = RaffleState.CALCULATING;
-        i_vrfCoordinator.requestRandomWords(
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane, // gas lane
             i_subscriptionId, // id that's funded with link
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             i_numWords
         );
+        // temporary for tests
+        emit RequestedRaffleWinner(requestId);
     }
 
     function withdrawPlatformFee() external onlyOwner {
@@ -268,7 +274,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     {
         bool timePassed = (block.timestamp - s_lastTimestamp) >= i_interval;
         bool isOpen = RaffleState.OPEN == s_raffleState;
-        bool hasPrize = (i_stETH.balanceOf(address(this)) - s_totalUserDeposits > 0);
+        bool hasPrize = (i_stETH.balanceOf(address(this)) - s_totalUserDeposits) > 0;
         // bool hasPrize = stakingRewardsTotal > 0;
         upkeepNeeded = timePassed && isOpen && hasPrize;
         return (upkeepNeeded, "0x0");
@@ -313,9 +319,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         // 1. Calculate the sum of all TWABs for the time period of interest (`totalTWAB`).
         // 2. Scale the random number from Chainlink VRF to the range `[0, totalTWAB]` using modulo (`%`). This will give us a "ticket number" in the virtual array.
         // 3. Iterate over users, summing their TWABs, until the sum exceeds the ticket number. The current user is the winner.
-
+        emit RandomWord(randomWords[0]);
         uint256 totalTwab = calculateTwab(address(0), s_lastTimestamp, block.timestamp);
         uint256 scaledNumber = (randomWords[0] % totalTwab);
+        emit ScaledRandomNumber(scaledNumber);
         // Initialise a running total of TWABs
         uint256 runningTotal = 0;
         address winner;
@@ -510,12 +517,12 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         return s_totalDepositTwabs[s_totalDepositTwabs.length - 1];
     }
 
-    // // Temporary getters
-    // function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
-    //     return s_userTwabs[user];
-    // }
+    // Temporary getters for testing
+    function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
+        return s_userTwabs[user];
+    }
 
-    // function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
-    //     return s_totalDepositTwabs;
-    // }
+    function getTotalBalanceLog() external view returns (BalanceLog[] memory) {
+        return s_totalDepositTwabs;
+    }
 }
