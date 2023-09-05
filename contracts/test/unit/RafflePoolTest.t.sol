@@ -85,6 +85,7 @@ contract RafflePoolTest is StdCheats, Test {
         _;
     }
 
+    // // unnecessary -> deploy script now warps to near-present before deploying raffle pool
     modifier warpToPresentDay() {
         vm.warp(1680616584);
         _;
@@ -97,24 +98,60 @@ contract RafflePoolTest is StdCheats, Test {
         _;
     }
 
+    modifier raffleRebaseAndTimePassed() {
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+        _;
+    }
+
     /////////////////////////
     // Helper Functions   //
     ////////////////////////
     function _depositStEthToRafflePool(address _address, uint256 _amount) internal {
-        uint256 preDepositBalance = rafflePool.getUserDeposit(PLAYER);
+        uint256 preDepositBalance = rafflePool.getUserDeposit(_address);
         vm.startPrank(_address);
-        StEth.approve(address(rafflePool), type(uint256).max);
+        _checkAllowanceExceedsAmountOrApprove(_address, _amount);
         rafflePool.depositStEth(_amount);
-        assertApproxEqAbs(rafflePool.getUserDeposit(PLAYER), preDepositBalance + _amount, 2 wei);
         vm.stopPrank();
+        assertApproxEqAbs(rafflePool.getUserDeposit(_address), preDepositBalance + _amount, 2 wei);
+    }
+
+    function _checkAllowanceExceedsAmountOrApprove(address _address, uint256 _amount) internal {
+        uint256 allowance = StEth.allowance(_address, address(rafflePool));
+        // if not, approve allowance
+        if (allowance < _amount) {
+            StEth.approve(address(rafflePool), type(uint256).max);
+        }
+        assert(allowance >= _amount);
     }
 
     function _withdrawStEthFromRafflePool(address _address, uint256 _amount) internal {
-        uint256 preWithdrawalBalance = rafflePool.getUserDeposit(PLAYER);
+        uint256 preWithdrawalBalance = rafflePool.getUserDeposit(_address);
         vm.startPrank(_address);
         rafflePool.withdrawStEth(_amount);
-        assertApproxEqAbs(rafflePool.getUserDeposit(PLAYER), preWithdrawalBalance - _amount, 2 wei);
         vm.stopPrank();
+        assertApproxEqAbs(rafflePool.getUserDeposit(_address), preWithdrawalBalance - _amount, 2 wei);
+    }
+
+    function _getAndDepositStEth(address _address, uint256 _amount) internal {
+        vm.prank(_address);
+        (bool success,) = address(steth).call{value: STARTING_USER_BALANCE}("");
+        uint256 preDepositBalance = rafflePool.getUserDeposit(_address);
+        vm.startPrank(_address);
+        StEth.approve(address(rafflePool), type(uint256).max);
+        rafflePool.depositStEth(_amount);
+        vm.stopPrank();
+        assertApproxEqAbs(rafflePool.getUserDeposit(_address), preDepositBalance + _amount, 2 wei);
+    }
+
+    function _depositEthToRafflePool(address _address, uint256 _amount) internal {
+        uint256 preDepositBalance = rafflePool.getUserDeposit(_address);
+        vm.prank(_address);
+        rafflePool.depositEth{value: _amount}();
+        assertApproxEqAbs(rafflePool.getUserDeposit(_address), preDepositBalance + _amount, 2 wei);
     }
 
     /////////////////////////
@@ -278,28 +315,6 @@ contract RafflePoolTest is StdCheats, Test {
     }
 
     //////////////////////////
-    // Modifiers & Helpers  //
-    //////////////////////////
-
-    function testGetStEthModifier() public getStEth(PLAYER) {
-        assertApproxEqAbs(StEth.balanceOf(PLAYER), STARTING_USER_BALANCE, 2 wei);
-    }
-
-    function testDepositStEthHelperFunction() public getStEth(PLAYER) {
-        // Arrange
-        uint256 preUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
-        // Act
-        _depositStEthToRafflePool(PLAYER, STARTING_USER_BALANCE);
-        uint256 postUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
-        // Assert
-        assertApproxEqAbs(postUserDepositBalance, preUserDepositBalance + STARTING_USER_BALANCE, 2 wei);
-    }
-
-    function testWarpToPresentDayModifier() public warpToPresentDay {
-        assertEq(block.timestamp, 1680616584);
-    }
-
-    //////////////////////////
     // Withdraw stETH       //
     //////////////////////////
 
@@ -337,6 +352,52 @@ contract RafflePoolTest is StdCheats, Test {
         vm.expectRevert(RafflePool.RafflePool__InsufficientStEthBalance.selector);
         vm.prank(PLAYER);
         rafflePool.withdrawStEth(1e18 + 1);
+    }
+
+    //////////////////////////
+    // stETH integration    //
+    //////////////////////////
+    function testStEthTransferCornerCase() public getStEth(PLAYER) {
+        uint256 preTransferUserBalance = StEth.balanceOf(PLAYER);
+        uint256 preTransferUserShares = StEth.sharesOf(PLAYER);
+        uint256 preTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
+        uint256 preTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
+        _depositStEthToRafflePool(PLAYER, 2 ether);
+        uint256 postTransferUserBalance = StEth.balanceOf(PLAYER);
+        uint256 postTransferUserShares = StEth.sharesOf(PLAYER);
+        uint256 postTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
+        uint256 postTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
+
+        assertEq(
+            preTransferUserShares - postTransferUserShares, postTransferRafflePoolShares - preTransferRafflePoolShares
+        );
+        assertApproxEqAbs(
+            preTransferUserBalance - postTransferUserBalance,
+            postTransferRafflePoolBalance - preTransferRafflePoolBalance,
+            2 wei
+        );
+    }
+
+    //////////////////////////
+    // Modifiers & Helpers  //
+    //////////////////////////
+
+    function testGetStEthModifier() public getStEth(PLAYER) {
+        assertApproxEqAbs(StEth.balanceOf(PLAYER), STARTING_USER_BALANCE, 2 wei);
+    }
+
+    function testDepositStEthHelperFunction() public getStEth(PLAYER) {
+        // Arrange
+        uint256 preUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
+        // Act
+        _depositStEthToRafflePool(PLAYER, STARTING_USER_BALANCE);
+        uint256 postUserDepositBalance = rafflePool.getUserDeposit(PLAYER);
+        // Assert
+        assertApproxEqAbs(postUserDepositBalance, preUserDepositBalance + STARTING_USER_BALANCE, 2 wei);
+    }
+
+    function testWarpToPresentDayModifier() public warpToPresentDay {
+        assertEq(block.timestamp, 1680616584);
     }
 
     //////////////////////////
@@ -380,7 +441,7 @@ contract RafflePoolTest is StdCheats, Test {
         assertEq(lastTimestamp, block.timestamp);
     }
 
-    /* @dev */
+    // Note: utilises temporary getters for retrieving balance logs arrays
     function testRafflePoolMultipleTransactionsUpdateBalanceLogs() public getStEth(PLAYER) {
         uint256[3] memory balanceAmounts;
         uint256[3] memory balanceTimestamps;
@@ -476,28 +537,31 @@ contract RafflePoolTest is StdCheats, Test {
         rafflePool.performUpkeep("");
     }
 
-    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public getAndDepositStEth(PLAYER, 1 ether) {}
-
     //////////////////////////
-    // Events              //
+    // Events               //
     //////////////////////////
 
-    // function testStEthTransfer() public getStEth(PLAYER) {
-    //     uint256 preTransferUserBalance = StEth.balanceOf(PLAYER);
-    //     uint256 preTransferUserShares = StEth.sharesOf(PLAYER);
-    //     uint256 preTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
-    //     uint256 preTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
-    //     _depositStEthToRafflePool(PLAYER, 2 ether);
-    //     uint256 postTransferUserBalance = StEth.balanceOf(PLAYER);
-    //     uint256 postTransferUserShares = StEth.sharesOf(PLAYER);
-    //     uint256 postTransferRafflePoolBalance = StEth.balanceOf(address(rafflePool));
-    //     uint256 postTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
+    // Note: utilises temporary event for requesting raffle winner
+    // testing output of an event
+    // Chainlink VRF works by emitting event (RandomWordsRequested) from the VRFCoordinator contract,
+    // Chainlink node listens for this event, then knows when to request random word and call fulfillRandomWords function on the VRFCoordinator contract
+    function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public getAndDepositStEth(PLAYER, 1 ether) {
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
 
-    //     console.log("User Balance Change: -", preTransferUserBalance - postTransferUserBalance);
-    //     console.log("User Shares Change: -", preTransferUserShares - postTransferUserShares);
-    //     console.log("RafflePool Balance Change: +", postTransferRafflePoolBalance - preTransferRafflePoolBalance);
-    //     console.log("RafflePool Shares Change: +", postTransferRafflePoolShares - preTransferRafflePoolShares);
-    // }
+        vm.recordLogs();
+        rafflePool.performUpkeep("");
+        // Vm.Log, special Foundry type for logs array
+        Vm.Log[] memory logs = vm.getRecordedLogs(); // capture all values of all emitted events
+        // all logs recorded as bytes32
+        bytes32 requestId = logs[1].topics[1]; // 0th topic refers to entire event, 1st topic refers to requestId
+        RafflePool.RaffleState raffleState = rafflePool.getRaffleState();
+        assert(uint256(requestId) > 0);
+        assert(raffleState == RafflePool.RaffleState.CALCULATING);
+    }
 
     function testERC20TransferWithoutFunctionCall() public {}
 
@@ -510,6 +574,112 @@ contract RafflePoolTest is StdCheats, Test {
     // }
 
     //////////////////////////
+    // fulfillRandomWords
+    //////////////////////////
+    // Fuzz test, by passing a parameter we can automatically test multiple values in one run
+    function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(uint256 randomRequestId)
+        public
+        getAndDepositStEth(PLAYER, 1 ether)
+        getAndDepositStEth(USER1, 2 ether)
+        raffleRebaseAndTimePassed
+    {
+        // VRFCoordinator should fail with this error message if requestId doesn't exist
+        vm.expectRevert("nonexistent request");
+        // VRFCoordinator `fulfillRandomWords` takes requestId and consumer address, should fail if no request made
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(randomRequestId, address(rafflePool));
+    }
+
+    //////////////////////////
     // Clean up active users
     //////////////////////////
+
+    //////////////////////////
+    // Full Test           //
+    //////////////////////////
+    // Deposit multiple times across multiple users
+    // Move through time & rebase so interval has passed and check upkeep returns true
+    // Perform upkeep and start request to get random number
+    // Pretend to be VRF Coordinator and fulfill request with random number
+    // Check that winner is picked and announced
+    function testFulfillRandomWordsPicksResetsAndAnnouncesWinner(uint256 _randomWord) public skipWhenForking {
+        // Deposit multiple times across multiple users
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        _depositEthToRafflePool(USER1, 2 ether);
+        _depositEthToRafflePool(USER2, 3 ether);
+        _depositEthToRafflePool(USER3, 4 ether);
+
+        // Move through time & rebase so interval has passed and check upkeep returns true
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            _depositEthToRafflePool(PLAYER, 1 ether); // deposit 1 steth each day
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+
+        uint256 finalBalance = StEth.balanceOf(address(rafflePool));
+        console.log("Final Balance: ", finalBalance);
+
+        // (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        // assertEq(upkeepNeeded, true);
+
+        // Perform upkeep and start request to get random number
+        vm.recordLogs();
+        rafflePool.performUpkeep("");
+        Vm.Log[] memory requestLogs = vm.getRecordedLogs();
+        bytes32 requestId = requestLogs[1].topics[1];
+        vm.recordLogs();
+        // Pretend to be VRF Coordinator and fulfill request with random number
+        // Since we are mocking locally, we are not getting true randomness of networks
+        // Instead we are just using the requestId to generate a random number
+        // So the VRF Coordinator will return the same number for each requestId
+        // To get around this, we can use the `fulfillRandomWordsWithOverride` function
+        // We can pass our own random words array to this function, and it will use that instead of generating its own
+        // Then can easily integrate with Foundry Fuzz testing
+        // Pass 3rd parameter as empty array to use default random words, seeded from requestId 1
+        // 3rd parameter format is uint256[]
+        // Create an array of length 1 and assign _randomWord to the first position
+        uint256[] memory wordsArray = new uint256[](1);
+        wordsArray[0] = _randomWord;
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWordsWithOverride(
+            uint256(requestId), address(rafflePool), wordsArray
+        );
+        // Vm.Log[] memory fulfillLogs = vm.getRecordedLogs();
+        // uint256 number1 = uint256(fulfillLogs[0].topics[1]);
+        // uint256 number2 = uint256(fulfillLogs[1].topics[1]);
+
+        // console.log(number1);
+        // console.log(number2);
+        // uint256 requestId = rafflePool.getRequestId();
+        // assertEq(requestId, 1);
+        // assertEq(rafflePool.getRaffleState(), RafflePool.RaffleState.CALCULATING);
+
+        address winningUser = rafflePool.getRecentWinner();
+        console.log(winningUser);
+        console.log("Active Depositors: ", rafflePool.getActiveDepositorsCount());
+
+        assertEq(rafflePool.getLastTimestamp(), block.timestamp);
+
+        // Check winner is allocated value
+        console.log("Winner New Balance", rafflePool.getUserDeposit(winningUser));
+        console.log(rafflePool.getPlatformFeeBalance()); // Will return 0 unless we increase platform fee
+
+        // // Pretend to be VRF Coordinator and fulfill request with random number
+        // VRFCoordinatorV2Mock vrfCoordinatorV2Mock = VRFCoordinatorV2Mock(vrfCoordinatorV2);
+        // vrfCoordinatorV2Mock.fulfillRandomWords(requestId, numWords, gasLane, 1);
+
+        // // Check that winner is picked and announced
+        // assertEq(rafflePool.getRaffleState(), RafflePool.RaffleState.OPEN);
+        // assertEq(rafflePool.getRaffleWinner(), USER1);
+    }
+
+    function testFuzzFulfillRaffleProcess() public {
+        uint256 additionalUsers = 10;
+        uint256 startIndex = 1;
+        for (uint256 i = startIndex; i < startIndex + additionalUsers; i++) {
+            address user = address(uint160(i));
+            // hoax - cheatcode sets up prank & deals ether
+            hoax(user, 2 ether);
+            rafflePool.depositEth{value: 1 ether}();
+        }
+    }
 }
