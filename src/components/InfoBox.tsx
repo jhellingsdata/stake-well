@@ -3,12 +3,12 @@
 import React from 'react'
 import { InfoBoxProps } from '../types';
 
-const InfoBox = ({ title, value, subscript }: InfoBoxProps) => {
+const InfoBox = ({ title, value, subscript, containerStyles }: InfoBoxProps) => {
     return (
-        <div className='flex flex-col items-center w-[120px]'>
+        <div className={`flex flex-col items-center ${containerStyles ? containerStyles : 'w-[120px]'}`}>
             <div className="flex items-baseline"> {/* This wrapper is for value + subscript layout */}
-                <h4 className='font-bold text-xl pt-2 px-2 pb-1 -mr-1'>{value}</h4>
-                {subscript && <span className='text-sm -mt-1'>{subscript}</span>} {/* Adjust styles as needed */}
+                <h4 className='font-semibold text-xl pt-2 px-1 pb-[2px]'>{value}</h4>
+                {subscript && <span className='text-[12px] -mt-1'>{subscript}</span>} {/* Adjust styles as needed */}
             </div>
             <p className='text-sm'>{title}</p>
         </div>
