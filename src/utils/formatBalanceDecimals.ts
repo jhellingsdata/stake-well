@@ -1,6 +1,6 @@
 import { formatEther } from 'viem'
 
-export const formatBalance = (balance: bigint, decimals: number) => {
+export const formatBalance = (balance: bigint | string, decimals: number) => {
     // If balance is 0, default decimals to 0
     console.log(balance)
     if (balance === 0n) {
