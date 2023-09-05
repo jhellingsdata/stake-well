@@ -5,6 +5,7 @@ import { parseEther, BaseError, formatEther } from 'viem'
 import { usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
 import { useRafflePoolGetUserDeposit, useRafflePoolWithdrawStEth, usePrepareRafflePoolWithdrawStEth } from '../generated'
 import { type Address, useBalance, useAccount } from 'wagmi'
+import CustomButton from './CustomButton'
 
 /* Custom Components */
 import { ValidateInput } from './ValidateInput';
@@ -50,6 +51,7 @@ function WithdrawStEth() {
     }
 
     const handleMaxClick = () => {
+
         setValue(balance ? formatEther(balance) : '0') // Convert BigInt to string, adjust as needed
     }
 
@@ -62,24 +64,35 @@ function WithdrawStEth() {
 
     const { data: receipt, isLoading: isPending, isSuccess } = useWaitForTransaction({ hash: data?.hash })
 
-    console.log(balance)
-    console.log(userWalletBalance)
+    let buttonStyles = 'bg-gradient-to-tl from-violet-500 to-violet-600 text-white tracking-wide'
+
     return (
         <>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault()
-                    write?.()
-                }}
+            <form className='w-full'
             >
-                Withdraw stETH:{' '}
+                <CustomButton
+                    title={`Max`}
+                    containerStyles={`w-full justify-self-end`}
+                    handleClick={(e) => {
+                        e.preventDefault()     // stops page refresh
+                        setValue(balance ? formatEther(balance) : '0')
+                    }}
+                />
                 <ValidateInput
                     onChange={handleInputChange}
                     placeholder="stETH amount"
                     value={value}
                 />
-                <button onClick={handleMaxClick}>Max</button>
-                <button disabled={!write && !isValid} type="submit">Withdraw</button>
+
+                <CustomButton
+                    title={`Withdraw`}
+                    containerStyles={`w-full rounded-xl mt-2 ${buttonStyles}`}
+                    handleClick={(e) => {
+                        e.preventDefault()     // stops page refresh
+                        write?.()
+                    }}
+                    disabled={!(write && isValid) || isLoading || isPending}
+                />
             </form>
             {isLoading && <div>Check wallet...</div>}
             {isPending && <div>Transaction pending...</div>}
