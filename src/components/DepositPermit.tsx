@@ -1,12 +1,12 @@
 'use client'
 
-import React, { use, useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { recoverTypedDataAddress, BaseError } from 'viem'
 import { type Address, useAccount, useContractRead, useSignTypedData, useWaitForTransaction } from 'wagmi';
-import { useIerc20PermitNonces, ierc20PermitABI, stakePoolAddress, rafflePoolAddress, usePrepareRafflePoolDepositStEthWithPermit, useRafflePoolDepositStEthWithPermit } from '../generated';
+import { useIerc20PermitNonces, ierc20PermitABI, rafflePoolAddress, usePrepareRafflePoolDepositStEthWithPermit, useRafflePoolDepositStEthWithPermit } from '../generated';
 import { useDebounce } from '../hooks/useDebounce';
 import { ValidateInput } from './ValidateInput';
-
+import CustomButton from './CustomButton';
 import { ADDRESS } from '../address';
 import { hexToSignature, parseEther } from 'viem';
 
@@ -14,12 +14,9 @@ interface DepositPermitProps {
     permitDeadline?: number;
 }
 
-export const DepositPermit: React.FC<DepositPermitProps> = ({ permitDeadline = Math.floor(Date.now() / 1000) + 3600 }) => {
-    return (
-        <div>
-            <DepositStEthWithPermit permitDeadline={permitDeadline} />
-        </div>
-    )
+export const DepositPermit: React.FC<DepositPermitProps> = ({ permitDeadline }) => {
+    return <MemoisedDepositStEthWithPermit permitDeadline={Math.floor(Date.now() / 1000) + 3600} />
+
 }
 
 
@@ -46,19 +43,19 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
     const [isValid, setIsValid] = useState(false)
     const [signature, setSignature] = useState<string | null>(null)
 
-    const debouncedValue = useDebounce(value);
+    const debouncedValue = useDebounce(value)
 
     // State Management: manage the status of deposit interaction.
-    // This will help us control the behavior and text of the single button.
-    const [interactionStatus, setInteractionStatus] = useState('pending');
+    // This helps to control the behavior and text of the single button.
+    const [interactionStatus, setInteractionStatus] = useState('pending')
 
 
     // const deadline = Math.floor(Date.now() / 1000) + 3600   // Valid for one hour
     const deadline = permitDeadline
 
     function handleInputChange(newValue: string, newIsValid: boolean) {
-        setValue(newValue);
-        setIsValid(newIsValid);
+        setValue(newValue)
+        setIsValid(newIsValid)
     }
 
     // use Wagmi hook for calling a read method on stETH Contract to get the nonce
@@ -106,7 +103,7 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
     // // Generate EIP712 message
     // const message = {
     //     owner: address,  // User's address
-    //     spender: stakePoolAddress[5],  // Address of the contract to which the user is delegating
+    //     spender: rafflePoolAddress[5],  // Address of the contract to which the user is delegating
     //     value: parseEther(value),
     //     nonce: nonce,
     //     deadline: deadline,  // Valid for one hour
@@ -203,68 +200,40 @@ function DepositStEthWithPermit({ permitDeadline }: DepositStEthWithPermitProps)
             buttonAction = noop
     }
 
+    let buttonStyles = 'bg-gradient-to-tl from-violet-500 to-violet-600 text-white tracking-wide'
 
     return (
 
         <>
-            <form onSubmit={(e) => e.preventDefault()}>
+            <form className='w-full'>
                 <ValidateInput
                     onChange={handleInputChange}
                     placeholder="stETH amount"
                     value={value}
                 />
-                <button
+                {/* <button
                     disabled={!isValid || interactionStatus === 'done'}
                     onClick={buttonAction}
                 >
                     {buttonText}
-                </button>
-                {sig && (
-                    <div>
-                        <div>Signature: {sig}</div>
-                        <div>Recovered address {recoveredAddress}</div>
-                    </div>
-                )}
+                </button> */}
+                <CustomButton
+                    title={buttonText}
+                    containerStyles={`w-full rounded-xl mt-2 ${buttonStyles}`}
+                    handleClick={(e) => {
+                        e.preventDefault()     // stops page refresh
+                        buttonAction()
+                    }}
+                    disabled={!isValid || isLoading || isPending}
+                />
+
                 {sigError && <div>Error: {sigError?.message}</div>}
             </form>
             {isLoading && <div>Check wallet...</div>}
             {isPending && <div>Transaction pending...</div>}
-            {isDepositSuccess && (
-                <>
-                    <div>Transaction Hash: {depositPermitData?.hash}</div>
-                    {/* <div>
-                        Transaction Receipt: <pre>{stringify(receipt, null, 2)}</pre>
-                    </div> */}
-                </>
-            )}
             {isDepositPermitError && <div>{(depositPermitError as BaseError)?.shortMessage}</div>}
         </>
-        // <>
-        //     <form
-        //         onSubmit={(e) => {
-        //             e.preventDefault()
-        //         }}
-        //     >
-        //         <ValidateInput
-        //             onChange={handleInputChange}
-        //             placeholder="stETH amount"
-        //             value={value}
-        //         />
-        //         <button disabled={isLoading} onClick={() => signTypedData()}>
-        //             {isLoading ? 'Check Wallet' : 'Sign Message'}
-        //         </button>
-        //         {sig && (
-        //             <div>
-        //                 <div>Signature: {sig}</div>
-        //                 <div>Recovered address {recoveredAddress}</div>
-        //             </div>
-        //         )}
-        //         {sigError && <div>Error: {sigError?.message}</div>}
-        //     </form>
-
-        //     <button disabled={!isValid && !signature} onClick={() => write?.()}>Deposit</button>
-        // </>
-    );
+    )
 }
 
-export default DepositStEthWithPermit;
+const MemoisedDepositStEthWithPermit = memo(DepositStEthWithPermit)
