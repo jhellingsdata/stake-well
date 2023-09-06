@@ -1,10 +1,13 @@
 'use client'
-
+import { useState } from 'react'
 import { formatEther, BaseError } from 'viem'
 import { type Address } from 'wagmi'
 import { useRafflePoolGetUserDeposit } from '../generated'
-
+import CustomButton from './CustomButton'
 import { useAccount } from 'wagmi'
+import { PoolDeposit } from '@/components/PoolDeposit'
+import { PoolWithdraw } from './PoolWithdraw'
+import { formatBalance, formatDecimals } from '../utils/formatBalanceDecimals'
 
 interface PoolUserBalanceProps {
     decimals?: number;
@@ -53,15 +56,24 @@ function ViewUserBalance({ decimals }: ViewUserBalanceProps) {
     //     </button>
     //     {error && <div>{(error as BaseError).shortMessage}</div>}
     // </div>
+
+    const [openDeposit, setOpenDeposit] = useState(false)
+    const [openWithdraw, setOpenWithdraw] = useState(false)
+
     console.log(data)
+    let buttonStyles = 'rounded-sm mx-0 px-2 py-2'
     return (
         <div>
-            stETH balance: {isLoading ? 'Loading...' : isSuccess ? formatBalance(data!) : 'Loading...'}
-            <button onClick={() => refetch()}>
-                {isRefetching ? 'fetching...' : 'fetch'}
-            </button>
-            {error && <div>{(error as BaseError).shortMessage}</div>}
-        </div>
+            <div className="raffle-card w-[400px] flex-initial flex-row mt-10 mx-auto px-6">
+                <CustomButton title='Deposit' handleClick={() => setOpenDeposit(!openDeposit)} containerStyles={buttonStyles} />
+                <CustomButton title='Withdraw' handleClick={() => setOpenWithdraw(!openWithdraw)} containerStyles={buttonStyles} />
+                stETH balance: {' '}
+                {isLoading ? 'Loading...' : isSuccess ? formatDecimals(data!, 3) : 'Loading...'}
+                {error && <div>{(error as BaseError).shortMessage}</div>}
+            </div>
+            {openDeposit && <PoolDeposit />}
+            {openWithdraw && <PoolWithdraw />}
+        </div >
     )
 }
 
