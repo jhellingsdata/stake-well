@@ -8,15 +8,16 @@ import {Vm} from "../../lib/forge-std/src/Vm.sol";
 import {StdCheats} from "../../lib/forge-std/src/StdCheats.sol";
 import {StdUtils} from "../../lib/forge-std/src/StdUtils.sol";
 import {DeployRafflePool} from "../../script/DeployRafflePool.s.sol";
-import {CreateSubscription} from "../../script/Interactions.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "../mocks/VRFCoordinatorV2Mock.sol";
 import {RafflePool} from "../../src/RafflePool.sol";
 import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 import {StEthMock} from "../mocks/StEthToken.sol";
 import {SigUtils} from "../mocks/utils/SigUtils.sol";
+import {InvariantTest} from "../../lib/forge-std/src/InvariantTest.sol";
+import {RafflePoolHandler} from "../invariants/RafflePoolHandler.t.sol";
 
-contract RafflePoolTest is StdCheats, Test {
+contract RafflePoolTest is InvariantTest, StdCheats, Test {
     ///////////////////
     // Events
     ///////////////////
@@ -30,6 +31,7 @@ contract RafflePoolTest is StdCheats, Test {
     RafflePool rafflePool;
     HelperConfig helperConfig;
     SigUtils sigUtils;
+    RafflePoolHandler handler;
 
     StEthMock public StEth;
     address steth;
@@ -74,6 +76,9 @@ contract RafflePoolTest is StdCheats, Test {
         ) = helperConfig.activeNetworkConfig(); // now these are all getting saved as state vars so can use them in tests below
         StEth = StEthMock(payable(steth));
         sigUtils = new SigUtils(StEth.DOMAIN_SEPARATOR());
+        handler = new RafflePoolHandler(rafflePool, StEth);
+        deal(address(handler), 1000 * 1e18);
+        // targetContract(address(rafflePool));
     }
 
     /////////////////////////
@@ -116,7 +121,12 @@ contract RafflePoolTest is StdCheats, Test {
         _checkAllowanceExceedsAmountOrApprove(_address, _amount);
         rafflePool.depositStEth(_amount);
         vm.stopPrank();
-        assertApproxEqAbs(rafflePool.getUserDeposit(_address), preDepositBalance + _amount, 2 wei);
+        assertApproxEqAbs(
+            rafflePool.getUserDeposit(_address),
+            preDepositBalance + _amount,
+            2 wei,
+            "Deposit amount not equal to user deposit"
+        );
     }
 
     function _checkAllowanceExceedsAmountOrApprove(address _address, uint256 _amount) internal {
@@ -125,7 +135,7 @@ contract RafflePoolTest is StdCheats, Test {
         if (allowance < _amount) {
             StEth.approve(address(rafflePool), type(uint256).max);
         }
-        assert(allowance >= _amount);
+        assert(StEth.allowance(_address, address(rafflePool)) >= _amount);
     }
 
     function _withdrawStEthFromRafflePool(address _address, uint256 _amount) internal {
@@ -139,6 +149,7 @@ contract RafflePoolTest is StdCheats, Test {
     function _getAndDepositStEth(address _address, uint256 _amount) internal {
         vm.prank(_address);
         (bool success,) = address(steth).call{value: STARTING_USER_BALANCE}("");
+        assertEq(success, true, "StEth mint failed");
         uint256 preDepositBalance = rafflePool.getUserDeposit(_address);
         vm.startPrank(_address);
         StEth.approve(address(rafflePool), type(uint256).max);
@@ -369,12 +380,15 @@ contract RafflePoolTest is StdCheats, Test {
         uint256 postTransferRafflePoolShares = StEth.sharesOf(address(rafflePool));
 
         assertEq(
-            preTransferUserShares - postTransferUserShares, postTransferRafflePoolShares - preTransferRafflePoolShares
+            preTransferUserShares - postTransferUserShares,
+            postTransferRafflePoolShares - preTransferRafflePoolShares,
+            "Shares of user pre-deposit == shares of raffle pool post-deposit"
         );
         assertApproxEqAbs(
             preTransferUserBalance - postTransferUserBalance,
             postTransferRafflePoolBalance - preTransferRafflePoolBalance,
-            2 wei
+            2 wei,
+            "Balance of user pre-deposit ~= balance of raffle pool post-deposit"
         );
     }
 
@@ -601,7 +615,76 @@ contract RafflePoolTest is StdCheats, Test {
     // Perform upkeep and start request to get random number
     // Pretend to be VRF Coordinator and fulfill request with random number
     // Check that winner is picked and announced
-    function testFulfillRandomWordsPicksResetsAndAnnouncesWinner(uint256 _randomWord) public skipWhenForking {
+    function testFulfillRandomWordsPicksResetsAndAnnouncesWinner() public skipWhenForking {
+        // Deposit multiple times across multiple users
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        _depositEthToRafflePool(USER1, 2 ether);
+        _depositEthToRafflePool(USER2, 3 ether);
+        _depositEthToRafflePool(USER3, 4 ether);
+        console.log(block.timestamp);
+
+        // Move through time & rebase so interval has passed and check upkeep returns true
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            _depositEthToRafflePool(PLAYER, 1 ether); // deposit 1 steth each day
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, true, "Upkeep not needed");
+
+        // Perform upkeep and listen for request id, this is passed to VRFCoordinator to request random number
+        vm.recordLogs();
+        rafflePool.performUpkeep("");
+        Vm.Log[] memory requestLogs = vm.getRecordedLogs();
+        bytes32 requestId = requestLogs[1].topics[1];
+
+        // Pretend to be VRF Coordinator and fulfill request with random number
+        vm.recordLogs();
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(uint256(requestId), address(rafflePool));
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        console.log("Events recorded", entries.length);
+        console.log("Event 0: ", uint256(entries[0].topics[1])); // Random word
+        console.log("Event 1: ", uint256(entries[1].topics[1])); // Scaled random number
+        console.log("Winner: ", address(uint160(uint256(entries[2].topics[1])))); // Winning address
+        console.log("Raffle Prize: ", abi.decode(entries[2].data, (uint256))); // Raffle prize
+        uint256 rafflePrize = abi.decode(entries[2].data, (uint256)); // `PickedWinner(winner, rafflePrize)` event data
+        (uint256 seed, uint96 payment,) = abi.decode(entries[3].data, (uint256, uint96, bool));
+        console.log("RequestId: ", uint256(entries[3].topics[1]));
+        console.log("Output Seed: ", seed);
+        console.log("LINK Payment: ", payment);
+
+        // uint256 randomWord = uint256(entries[0].topics[1]);
+        // uint256 scaledRandomNumber = uint256(entries[1].topics[1]);
+        // string memory pickedWinner = vm.toString(entries[2].topics[1]);
+
+        // uint256 randomWordsFulfilledRequestid = uint256(entries[3].topics[1]);
+        // uint256 randomWordsFulfilledOutputSeed = uint256(entries[3].topics[2]);
+        // uint256 randomWordsFulfilledPayment = uint256(entries[3].topics[3]);
+
+        assert(rafflePool.getRecentWinner() != address(0)); // check winner is assigned (assumes stateless test)
+        assert(rafflePool.getRaffleState() == RafflePool.RaffleState.OPEN);
+        assertEq(rafflePool.getLastTimestamp(), block.timestamp, "Last timestamp not updated");
+
+        // Check winner is allocated value, i.e. balance is greater than balance at start of raffle
+        if (rafflePool.getRecentWinner() == PLAYER) {
+            assertGt(rafflePool.getUserDeposit(PLAYER), 8 ether);
+            assertApproxEqAbs(rafflePool.getUserDeposit(PLAYER), 8 ether + rafflePrize, 16 wei); // 8 transactions so allowing 16 wei deviation
+        } else if (rafflePool.getRecentWinner() == USER1) {
+            assertGt(rafflePool.getUserDeposit(USER1), 2 ether);
+        } else if (rafflePool.getRecentWinner() == USER2) {
+            assertGt(rafflePool.getUserDeposit(USER2), 3 ether);
+        } else if (rafflePool.getRecentWinner() == USER3) {
+            assertGt(rafflePool.getUserDeposit(PLAYER), 4 ether);
+        }
+
+        assertEq(rafflePool.getPlatformFeeBalance(), 0, "Initial state has zero fee"); // Will return 0 unless we increase platform fee
+        assertEq(rafflePool.getStakingRewardsTotal(), 0, "Raffle prize not reset");
+    }
+
+    function testFuzzFulillRandomWordsRaffleProcess(uint256 _randomWord) public skipWhenForking {
+        string memory path = "raffleOutput.txt";
         // Deposit multiple times across multiple users
         _depositEthToRafflePool(PLAYER, 1 ether);
         _depositEthToRafflePool(USER1, 2 ether);
@@ -622,12 +705,11 @@ contract RafflePoolTest is StdCheats, Test {
         // (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
         // assertEq(upkeepNeeded, true);
 
-        // Perform upkeep and start request to get random number
+        // Perform upkeep and listen for request id, this is passed to VRFCoordinator to request random number
         vm.recordLogs();
         rafflePool.performUpkeep("");
         Vm.Log[] memory requestLogs = vm.getRecordedLogs();
         bytes32 requestId = requestLogs[1].topics[1];
-        vm.recordLogs();
         // Pretend to be VRF Coordinator and fulfill request with random number
         // Since we are mocking locally, we are not getting true randomness of networks
         // Instead we are just using the requestId to generate a random number
@@ -643,43 +725,166 @@ contract RafflePoolTest is StdCheats, Test {
         VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWordsWithOverride(
             uint256(requestId), address(rafflePool), wordsArray
         );
-        // Vm.Log[] memory fulfillLogs = vm.getRecordedLogs();
-        // uint256 number1 = uint256(fulfillLogs[0].topics[1]);
-        // uint256 number2 = uint256(fulfillLogs[1].topics[1]);
-
-        // console.log(number1);
-        // console.log(number2);
-        // uint256 requestId = rafflePool.getRequestId();
-        // assertEq(requestId, 1);
-        // assertEq(rafflePool.getRaffleState(), RafflePool.RaffleState.CALCULATING);
 
         address winningUser = rafflePool.getRecentWinner();
-        console.log(winningUser);
-        console.log("Active Depositors: ", rafflePool.getActiveDepositorsCount());
-
-        assertEq(rafflePool.getLastTimestamp(), block.timestamp);
+        assertEq(rafflePool.getLastTimestamp(), block.timestamp, "Last timestamp not updated");
+        vm.writeLine(path, vm.toString(winningUser));
 
         // Check winner is allocated value
         console.log("Winner New Balance", rafflePool.getUserDeposit(winningUser));
         console.log(rafflePool.getPlatformFeeBalance()); // Will return 0 unless we increase platform fee
 
-        // // Pretend to be VRF Coordinator and fulfill request with random number
-        // VRFCoordinatorV2Mock vrfCoordinatorV2Mock = VRFCoordinatorV2Mock(vrfCoordinatorV2);
-        // vrfCoordinatorV2Mock.fulfillRandomWords(requestId, numWords, gasLane, 1);
-
         // // Check that winner is picked and announced
-        // assertEq(rafflePool.getRaffleState(), RafflePool.RaffleState.OPEN);
-        // assertEq(rafflePool.getRaffleWinner(), USER1);
+        assert(rafflePool.getRaffleState() == RafflePool.RaffleState.OPEN);
     }
 
-    function testFuzzFulfillRaffleProcess() public {
-        uint256 additionalUsers = 10;
-        uint256 startIndex = 1;
-        for (uint256 i = startIndex; i < startIndex + additionalUsers; i++) {
+    function testFuzzFulfillRaffleProcess(uint8 _userCount, uint8 _depositAmount, uint256 _randomWord) public {
+        // use fuzz parameters and modulo function to vary userCount and deposit time (before or after start)
+        uint256 userCount = 10;
+        uint256 numUsersBeforeStart = _userCount % userCount + 1;
+        uint256 depositAmount = (_depositAmount % 100) + 1 ether; // vary deposit amount between 1 and 100 ether
+        for (uint256 i = 1; i < numUsersBeforeStart; i++) {
+            address user = address(uint160(i));
+            hoax(user, 100 ether);
+            rafflePool.depositEth{value: depositAmount}();
+        }
+
+        // Rebase steth each day
+        for (uint256 i = 0; i < 4; i++) {
+            vm.warp(block.timestamp + 1 days);
+            StEth.rebase();
+        }
+
+        for (uint256 i = numUsersBeforeStart; i < userCount; i++) {
             address user = address(uint160(i));
             // hoax - cheatcode sets up prank & deals ether
-            hoax(user, 2 ether);
+            hoax(user, 100 ether);
             rafflePool.depositEth{value: 1 ether}();
         }
+        for (uint256 i = 0; i < 4; i++) {
+            vm.warp(block.timestamp + 3 days);
+            StEth.rebase();
+        }
+        assertEq(rafflePool.getActiveDepositorsCount(), userCount);
+        (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        assertEq(upkeepNeeded, true, "Upkeep not needed");
+
+        // Perform upkeep and listen for request id, this is passed to VRFCoordinator to request random number
+        vm.recordLogs();
+        rafflePool.performUpkeep("");
+        Vm.Log[] memory requestLogs = vm.getRecordedLogs();
+        bytes32 requestId = requestLogs[1].topics[1];
+
+        uint256[] memory wordsArray = new uint256[](1);
+        wordsArray[0] = _randomWord;
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWordsWithOverride(
+            uint256(requestId), address(rafflePool), wordsArray
+        );
+    }
+    // Could probably utilise a while loop to improve randomness
+
+    //////////////////////////
+    // Active Users Array   //
+    //////////////////////////
+
+    ///////////////////////////////////
+    // TWAB Calculations - Manual    //
+    ///////////////////////////////////
+    function testCalculateTwabConstantBalanceUserDepositAtStart() public skipWhenForking {
+        // initial block.timestamp: 1693408871
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        uint256 playerDeposit = rafflePool.getUserDeposit(PLAYER);
+        _depositEthToRafflePool(USER1, 2 ether);
+        uint256 user1Deposit = rafflePool.getUserDeposit(USER1);
+        _depositEthToRafflePool(USER2, 3 ether);
+        uint256 user2Deposit = rafflePool.getUserDeposit(USER2);
+        _depositEthToRafflePool(USER3, 4 ether);
+        uint256 user3Deposit = rafflePool.getUserDeposit(USER3);
+        uint256 initialTimestamp = block.timestamp;
+        vm.warp(block.timestamp + 1 days);
+        uint256 playerTwab = rafflePool.calculateTwab(PLAYER, initialTimestamp, block.timestamp);
+        // if (userAddress == address(0)) then `calculateTwab` will return the total twab
+        uint256 totalTwab = rafflePool.calculateTwab(address(0), initialTimestamp, block.timestamp);
+        assertEq(playerTwab, playerDeposit);
+        assertEq(totalTwab, playerDeposit + user1Deposit + user2Deposit + user3Deposit);
+    }
+
+    function testCalculateTwabConstantBalanceUserDepositBeforeStart() public skipWhenForking {
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        uint256 playerDeposit = rafflePool.getUserDeposit(PLAYER);
+        _depositEthToRafflePool(USER1, 2 ether);
+        uint256 user1Deposit = rafflePool.getUserDeposit(USER1);
+        _depositEthToRafflePool(USER2, 3 ether);
+        uint256 user2Deposit = rafflePool.getUserDeposit(USER2);
+        _depositEthToRafflePool(USER3, 4 ether);
+        uint256 user3Deposit = rafflePool.getUserDeposit(USER3);
+        vm.warp(block.timestamp + 1 days);
+        uint256 initialTimestamp = block.timestamp;
+        vm.warp(block.timestamp + 1 days);
+        uint256 playerTwab = rafflePool.calculateTwab(PLAYER, initialTimestamp, block.timestamp);
+        uint256 totalTwab = rafflePool.calculateTwab(address(0), initialTimestamp, block.timestamp);
+        assertEq(playerTwab, playerDeposit, "Player twab incorrect");
+        assertEq(totalTwab, playerDeposit + user1Deposit + user2Deposit + user3Deposit, "Total twab incorrect");
+    }
+
+    function testCalculateTwabUserDepositAtEnd() public skipWhenForking {
+        // shouldn't occur, since Raffle will be in Calculating state at this point
+        uint256 initialTimestamp = block.timestamp;
+        vm.warp(block.timestamp + 7 days);
+        _depositEthToRafflePool(PLAYER, 3 ether);
+        uint256 playerTwab = rafflePool.calculateTwab(PLAYER, initialTimestamp, block.timestamp);
+        assertEq(playerTwab, 0);
+    }
+
+    function testCalculateTwabOneBalanceChangeUserDepositAfterStart() public skipWhenForking {
+        uint256 initialTimestamp = block.timestamp;
+        vm.warp(block.timestamp + 3 days);
+
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        uint256 playerDeposit = rafflePool.getUserDeposit(PLAYER);
+
+        vm.warp(block.timestamp + 4 days);
+        uint256 playerTwab = rafflePool.calculateTwab(PLAYER, initialTimestamp, block.timestamp);
+        // Player deposit active for 4 out of 7 days, so should have 4/7 of their deposit
+        uint256 expectedPlayerTwab = 4 * playerDeposit / 7;
+        assertEq(playerTwab, expectedPlayerTwab, "Player twab incorrect");
+    }
+
+    function testCalculateTwabMultipleUserDeposits() public skipWhenForking {
+        _depositEthToRafflePool(PLAYER, 1 ether);
+
+        vm.warp(block.timestamp + 1 days);
+        uint256 initialTimestamp = block.timestamp; // startTime
+        vm.warp(block.timestamp + 2 days);
+        _depositEthToRafflePool(PLAYER, 2 ether);
+        vm.warp(block.timestamp + 3 days);
+        _depositEthToRafflePool(PLAYER, 3 ether);
+        uint256 playerDeposit = rafflePool.getUserDeposit(PLAYER);
+        vm.warp(block.timestamp + 2 days);
+
+        uint256 playerTwab = rafflePool.calculateTwab(PLAYER, initialTimestamp, block.timestamp);
+        // Player deposit active for 4 out of 7 days, so should have 4/7 of their deposit
+        uint256 expectedPlayerTwab = 4 * playerDeposit / 7;
+        assertEq(playerTwab, expectedPlayerTwab, "Player twab incorrect");
+    }
+
+    //////////////////////////
+    // Invariants           //
+    //////////////////////////
+    // Function to check for duplicates in activeUsers
+    function _hasDuplicates() internal view returns (bool) {
+        address[] memory s_activeUsers = rafflePool.getActiveDepositors();
+        for (uint256 i = 0; i < s_activeUsers.length; i++) {
+            for (uint256 j = i + 1; j < s_activeUsers.length; j++) {
+                if (s_activeUsers[i] == s_activeUsers[j]) {
+                    return true; // Found a duplicate
+                }
+            }
+        }
+        return false;
+    }
+
+    function invariant_testActiveUsersNeverContainsDuplicates() public {
+        assertEq(_hasDuplicates(), false, "Active users array contains duplicates");
     }
 }
