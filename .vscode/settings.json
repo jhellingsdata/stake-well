@@ -1,4 +1,8 @@
 {
   "solidity.defaultCompiler": "localNodeModule",
-  "solidity.formatter": "forge"
+  "solidity.formatter": "forge",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
 }

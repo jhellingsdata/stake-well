@@ -1,6 +1,12 @@
 {
   "compilerOptions": {
     "target": "es2021",
+    "baseUrl": ".",
+    "paths": {
+      "@/components/*": [
+        "src/components/*"
+      ]
+    },
     "lib": [
       "dom",
       "dom.iterable",

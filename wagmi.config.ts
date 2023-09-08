@@ -8,7 +8,9 @@ export default defineConfig({
     foundry({
       exclude: [
         'DevOpsTools.sol/**',
-        'mocks/**',
+        'mocks',
+        'other',
+        'test',
         'Fork.t.sol/**',
         'VRFCoordinatorV2Mock.sol/**',
         'ERC20.sol/**',
@@ -30,6 +32,12 @@ export default defineConfig({
         '**.s.sol/*.json',
         '**.t.sol/*.json',
       ],
+      include: [
+        'RafflePool.sol/**',
+        'DonationPool.sol/**',
+        'DonationFactory.sol/**',
+        'IERC20Permit.sol/**',
+      ],
       forge: {
         // `wagmi generate` was failing at `forge build` step by trying to specify --root in build command. 
         // So compiler failed in trying to find IERC20.sol file
@@ -37,11 +45,8 @@ export default defineConfig({
         build: false,
       },
       deployments: {
-        StakePool: {
-          [chains.goerli.id]: '0xf53C6016781F3F3ec9E40495CC21Ad0E1608292D',
-        },
         RafflePool: {
-          [chains.goerli.id]: '0xc797FcFD56152b5cDF16C87284eE3922cdfB1A5A',
+          [chains.goerli.id]: '0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062',
         }
       },
       project: './contracts',

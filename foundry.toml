@@ -10,10 +10,10 @@ test = 'contracts/test'
 out = 'contracts/out'
 libs = ['contracts/lib', 'contracts/lib/openzeppelin-contracts/contracts']
 cache_path = 'contracts/cache'
-# solc = '0.8.20'
 auto_detect_remappings = true
 gas_reports = ["RafflePool"]
-# ffi = true
+fs_permissions = [{ access = "read-write", path = "./"}]
+# solc = '0.8.20'
 
 [etherscan]
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
