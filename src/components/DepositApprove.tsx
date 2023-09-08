@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { parseEther, BaseError } from 'viem'
 import { type Address, usePrepareSendTransaction, useSendTransaction, useWaitForTransaction } from 'wagmi'
 import { useDebounce } from '../hooks/useDebounce'
-import { rafflePoolAddress, useRafflePoolDepositEth, usePrepareRafflePoolDepositEth, useStakePoolDepositStEth, usePrepareStakePoolDepositStEth, useIerc20Approve, usePrepareIerc20Approve } from '../generated'
+import { rafflePoolAddress, useRafflePoolDepositStEth, usePrepareRafflePoolDepositStEth, useIerc20PermitApprove, usePrepareIerc20PermitApprove } from '../generated'
 import { ValidateInput } from './ValidateInput';
 
 export function DepositApprove() {
@@ -28,20 +28,20 @@ function DepositStEth() {
         setIsValid(newIsValid);
     }
 
-    const { config: approveConfig } = usePrepareIerc20Approve({
+    const { config: approveConfig } = usePrepareIerc20PermitApprove({
         args: [rafflePoolAddress[5] as Address, parseEther(value)], // This will approve the staking pool to move the stETH tokens from user's account
         enabled: Boolean(value),
     })
 
-    const { write: approveWrite, data: approveData, error: approveError, isLoading: approveIsLoading, isError: approveIsError } = useIerc20Approve(approveConfig)
+    const { write: approveWrite, data: approveData, error: approveError, isLoading: approveIsLoading, isError: approveIsError } = useIerc20PermitApprove(approveConfig)
 
 
-    const { config: depositConfig } = usePrepareStakePoolDepositStEth({
+    const { config: depositConfig } = usePrepareRafflePoolDepositStEth({
         args: [parseEther(value)],
         enabled: Boolean(value),
     })
 
-    const { write: depositWrite, data: depositData, error: depositError, isLoading: depositIsLoading, isError: depositIsError } = useStakePoolDepositStEth(depositConfig)
+    const { write: depositWrite, data: depositData, error: depositError, isLoading: depositIsLoading, isError: depositIsError } = useRafflePoolDepositStEth(depositConfig)
 
     const [isApproved, setIsApproved] = useState(false);
 

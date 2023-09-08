@@ -10,7 +10,6 @@ export function Balance() {
             <div>
                 <AccountBalance />
             </div>
-            <br />
             <div>
                 <AccountTokenBalance />
             </div>

@@ -63,15 +63,16 @@ export function ValidateInput({ value, onChange, placeholder }: Props) {
     }
 
     return (
-        <div>
+        <div className='w-full'>
             <input
+                className='w-full rounded-xl border-2 border-gray-300 p-2'
                 type="text"
                 value={value}
                 onChange={handleChange}
                 placeholder={placeholder}
                 aria-invalid={isTouched && !isValidEthValue(value)}
             />
-            {isTouched && !isValidEthValue(value) && <div style={{ color: 'red' }}>Please enter a valid ETH amount.</div>}
+            {isTouched && !isValidEthValue(value) && <div className='text-red-500'>Please enter a valid ETH amount.</div>}
         </div>
     );
 }
