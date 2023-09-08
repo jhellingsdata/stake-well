@@ -347,17 +347,15 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         s_lastTimestamp = block.timestamp;
         // Allocate stETH raffle rewards to winning user
         // ToDo: consider case if winning user has 0 balance, will still have been removed from active users list
-        s_userDeposit[winner] += s_stakingRewardsTotal;
+        _addBalance(winner, s_stakingRewardsTotal);
         s_recentWinner = winner;
         emit PickedWinner(winner, s_stakingRewardsTotal);
+        // reset staking rewards count to zero
+        s_stakingRewardsTotal = 0;
     }
 
     // Temporarily public
-    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime)
-        internal
-        view
-        returns (uint256)
-    {
+    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
         BalanceLog[] storage twabs; // pointer to storage-based arrays
         if (userAddress == address(0)) {
             twabs = s_totalDepositTwabs;
@@ -480,11 +478,6 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
         return s_raffleState;
     }
 
-    // note: may want to fetch in batches
-    function getActiveDepositors() external view returns (address[] memory) {
-        return s_activeUsers;
-    }
-
     function getActiveDepositorsCount() external view returns (uint256) {
         return s_activeUsers.length;
     }
@@ -518,6 +511,11 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     }
 
     // Temporary getters for testing
+    // note: may want to fetch in batches
+    function getActiveDepositors() external view returns (address[] memory) {
+        return s_activeUsers;
+    }
+
     function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
         return s_userTwabs[user];
     }
