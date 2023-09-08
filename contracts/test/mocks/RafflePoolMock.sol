@@ -1,50 +1,122 @@
+// Layout of Contract:
+// version
+// imports
+// errors
+// interfaces, libraries, contracts
+// Type declarations
+// State variables
+// Events
+// Modifiers
+// Functions
+
+// Layout of Functions:
+// constructor
+// receive function (if exists)
+// fallback function (if exists)
+// external
+// public
+// internal
+// private
+// internal & private view & pure functions
+// external & public view & pure functions
+
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.20;
 
-import {IERC20Permit} from "../../src/IERC20Permit.sol";
+import {IERC20Permit} from "./interfaces/IERC20Permit.sol";
+import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
+import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract TestRafflePool {
+/**
+ * @title An stETH no-loss RafflePool Contract
+ * @author J. Hellings
+ * @notice This contract is for creating a staking raffle vault/pool for stETH.
+ * @notice stETH staking rewards are used for no-loss raffle.
+ * @notice This will duplicate our vault functionality from `StakePool.sol`.
+ * @dev Implements Chainlink VRFv2 for random number generation.
+ */
+
+contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // Errors
     ///////////////////
     error RafflePool__NeedsMoreThanZero();
     error RafflePool__MintFailed();
+    error RafflePool__RaffleDrawInProgress();
     error RafflePool__InsufficientAllowance();
     error RafflePool__StEthTransferFailed();
     error RafflePool__WithdrawalFailed();
     error RafflePool__InsufficientStEthBalance();
+    error RafflePool__UpkeepNotNeeded(uint256 raffleBalance, uint256 raffleState);
+    error RafflePool__ExceedsMaxProtocolFee();
 
     ///////////////////
     // Type Declarations
     ///////////////////
+    enum RaffleState {
+        OPEN,
+        CALCULATING // Waiting for Chainlink VRF
+    }
+
+    // track TWABs for each user, represents a user's balance at a particular time
     struct BalanceLog {
-        uint256 balance; // User deposit balance at that timestamp
-        uint256 timestamp; // Block timestamp when the transaction occurred
+        uint256 balance;
+        uint256 timestamp;
     }
 
     ///////////////////
     // State Variables
     ///////////////////
     IERC20Permit private immutable i_stETH;
+    /* VRF Variables */
+    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
+    uint16 private constant REQUEST_CONFIRMATIONS = 3;
+    // uint32 private constant NUM_WORDS = 1;
+    uint32 private immutable i_callbackGasLimit;
+    uint32 private immutable i_numWords; // Can change to facilitate multi-strategy raffles, e.g. multiple winners
+    uint64 private immutable i_subscriptionId;
+    bytes32 private immutable i_gasLane;
 
+    /* Raffle Variables */
+    uint256 private immutable i_interval; // raffle duration
+    uint256 private s_lastTimestamp; // timestamp of last raffle draw
     uint256 private s_totalUserDeposits;
     uint256 private s_stakingRewardsTotal;
-
-    mapping(address => uint256) private s_userDeposit;
-    mapping(address => BalanceLog[]) private s_userTwabs;
+    uint256 private s_platformFee;
+    uint256 private s_platformFeeBalance;
+    address private s_recentWinner;
     address[] private s_activeUsers;
     address[] private s_tempActiveUsers;
-    BalanceLog[] private s_totalDepositTwabs; // array for tracking total deposit balance TWAB over time
+    mapping(address => uint256) private s_userDeposit;
+    // mapping(address => uint256) private s_lastActiveTimestamp;
 
+    // map user address to BalanceLogs array, to be updated with each transaction
+    mapping(address => BalanceLog[]) private s_userTwabs;
+    BalanceLog[] private s_totalDepositTwabs; // array for tracking total deposit balance over time
+
+    RaffleState private s_raffleState;
+
+    ///////////////////
     // Events
-    event MintAndDepositSuccessful(address indexed depositor, uint256 amount);
-    event WithdrawSuccessful(address indexed withdrawer, uint256 amount);
+    ///////////////////
+    event MintAndDepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event DepositSuccessful(address indexed depositor, uint256 amount, uint256 newBalance);
+    event WithdrawSuccessful(address indexed withdrawer, uint256 amount, uint256 newBalance);
+    event PickedWinner(address indexed winner, uint256 amount);
     event StakingRewardsUpdated(uint256 newRewardsTotal);
+    event ProtocolFeeWithdrawn(uint256 amount);
+    event ProtocolFeeAdjusted(uint256 newFee);
+
+    // temporary for tests
+    event RequestedRaffleWinner(uint256 indexed requestId);
+    event RandomWord(uint256 indexed randomWord);
+    event ScaledRandomNumber(uint256 indexed scaledNum);
+
     ///////////////////
     // Modifiers
     ///////////////////
-
     modifier moreThanZero(uint256 amount) {
         if (amount == 0) {
             revert RafflePool__NeedsMoreThanZero();
@@ -52,15 +124,34 @@ contract TestRafflePool {
         _;
     }
 
+    ///////////////////
     // Functions
-    constructor(address steth) {
+    ///////////////////
+    constructor(
+        address steth,
+        uint256 interval,
+        address vrfCoordinatorV2,
+        bytes32 gasLane,
+        uint64 subscriptionId,
+        uint32 callbackGasLimit,
+        uint32 numWords
+    ) VRFConsumerBaseV2(vrfCoordinatorV2) Ownable(msg.sender) {
         i_stETH = IERC20Permit(steth);
+        i_interval = interval;
+        i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
+        i_gasLane = gasLane;
+        i_subscriptionId = subscriptionId;
+        i_callbackGasLimit = callbackGasLimit;
+        i_numWords = numWords;
+        s_raffleState = RaffleState.OPEN;
+        s_lastTimestamp = block.timestamp;
     }
 
     ///////////////////
     // External Functions
     ///////////////////
     function depositEth() external payable moreThanZero(msg.value) {
+        _checkRaffleState();
         _addUser(msg.sender);
         uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         (bool success,) = address(i_stETH).call{value: msg.value}("");
@@ -69,45 +160,95 @@ contract TestRafflePool {
         uint256 actualMintedAmount = afterDeposit - beforeDeposit;
         _addBalance(msg.sender, actualMintedAmount);
         _updateBalanceLogs(msg.sender);
-        emit MintAndDepositSuccessful(msg.sender, actualMintedAmount);
+        emit MintAndDepositSuccessful(msg.sender, actualMintedAmount, s_userDeposit[msg.sender]);
     }
 
     function depositStEth(uint256 amount) external moreThanZero(amount) {
         // Ensure the allowance is sufficient
         uint256 allowance = i_stETH.allowance(msg.sender, address(this));
         if (allowance < amount) revert RafflePool__InsufficientAllowance();
+        _checkRaffleState();
         _addUser(msg.sender);
-        _addBalance(msg.sender, amount);
-        _updateBalanceLogs(msg.sender);
+        uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
         if (!success) revert RafflePool__StEthTransferFailed();
+        uint256 afterDeposit = i_stETH.balanceOf(address(this));
+        uint256 actualAmount = afterDeposit - beforeDeposit;
+        _addBalance(msg.sender, actualAmount);
+        _updateBalanceLogs(msg.sender);
+        emit DepositSuccessful(msg.sender, actualAmount, s_userDeposit[msg.sender]);
     }
 
     function depositStEthWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
         moreThanZero(amount)
     {
+        _checkRaffleState();
         _addUser(msg.sender);
-        _addBalance(msg.sender, amount);
-        _updateBalanceLogs(msg.sender);
+        uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         i_stETH.permit(msg.sender, address(this), amount, deadline, v, r, s);
         bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
         if (!success) revert RafflePool__StEthTransferFailed();
+        uint256 afterDeposit = i_stETH.balanceOf(address(this));
+        uint256 actualAmount = afterDeposit - beforeDeposit;
+        _addBalance(msg.sender, actualAmount);
+        _updateBalanceLogs(msg.sender);
+        emit DepositSuccessful(msg.sender, actualAmount, s_userDeposit[msg.sender]);
     }
 
     function withdrawStEth(uint256 amount) external moreThanZero(amount) {
         if (s_userDeposit[msg.sender] < amount) {
             revert RafflePool__InsufficientStEthBalance();
         }
+        _checkRaffleState();
         // Update user deposit balance & total deposit balance & logs
         _subtractBalance(msg.sender, amount);
         _updateBalanceLogs(msg.sender);
         bool success = i_stETH.transfer(msg.sender, amount);
         if (!success) revert RafflePool__WithdrawalFailed();
-        emit WithdrawSuccessful(msg.sender, amount);
+        emit WithdrawSuccessful(msg.sender, amount, s_userDeposit[msg.sender]);
     }
 
-    // Called periodically to update the staking rewards, could add to performUpkeep
+    function performUpkeep(bytes calldata /* performData */ ) external {
+        (bool upkeepNeeded,) = checkUpkeep("");
+        uint256 stakingRewardsTotal = i_stETH.balanceOf(address(this)) - s_totalUserDeposits;
+        // split staking rewards between platform fee and raffle prize
+        uint256 s_platformFeeAmount = (stakingRewardsTotal * s_platformFee) / 10000;
+        s_platformFeeBalance += s_platformFeeAmount;
+        stakingRewardsTotal -= s_platformFeeAmount;
+        if (!upkeepNeeded) {
+            revert RafflePool__UpkeepNotNeeded(stakingRewardsTotal, uint256(s_raffleState));
+        }
+        s_stakingRewardsTotal = stakingRewardsTotal;
+        s_raffleState = RaffleState.CALCULATING;
+        uint256 requestId = i_vrfCoordinator.requestRandomWords(
+            i_gasLane, // gas lane
+            i_subscriptionId, // id that's funded with link
+            REQUEST_CONFIRMATIONS,
+            i_callbackGasLimit,
+            i_numWords
+        );
+        // temporary for tests
+        emit RequestedRaffleWinner(requestId);
+    }
+
+    function withdrawPlatformFee() external onlyOwner {
+        uint256 platformFeeBalance = s_platformFeeBalance;
+        s_platformFeeBalance = 0;
+        bool success = i_stETH.transfer(msg.sender, platformFeeBalance);
+        if (!success) revert RafflePool__WithdrawalFailed();
+        emit ProtocolFeeWithdrawn(platformFeeBalance);
+    }
+
+    function adjustPlatformFee(uint256 newFee) external onlyOwner {
+        _adjustPlatformFee(newFee);
+    }
+
+    ///////////////////
+    // Public Functions
+    ///////////////////
+
+    // Called periodically to update the staking rewards
     function updateStakingRewards() external {
         uint256 currentBalance = i_stETH.balanceOf(address(this));
         uint256 expectedBalance = s_totalUserDeposits + s_stakingRewardsTotal;
@@ -117,10 +258,31 @@ contract TestRafflePool {
             emit StakingRewardsUpdated(s_stakingRewardsTotal);
         }
     }
+
+    /*
+    * @dev Used by Chainlink Automation nodes call to determine if the contract needs upkeep.
+    * The following should be true for this to return true:
+    * 1. Time interval has passed between raffle run
+    * 2. Raffle is open
+    * 3. The contract has staking rewards
+    * 4. (Implicit) The subscription is funded with LINK
+    */
+    function checkUpkeep(bytes memory /* checkData */ )
+        public
+        view
+        returns (bool upkeepNeeded, bytes memory /* performData */ )
+    {
+        bool timePassed = (block.timestamp - s_lastTimestamp) >= i_interval;
+        bool isOpen = RaffleState.OPEN == s_raffleState;
+        bool hasPrize = (i_stETH.balanceOf(address(this)) - s_totalUserDeposits) > 0;
+        // bool hasPrize = stakingRewardsTotal > 0;
+        upkeepNeeded = timePassed && isOpen && hasPrize;
+        return (upkeepNeeded, "0x0");
+    }
+
     ///////////////////
     // Internal Functions
     ///////////////////
-
     function _addUser(address userAddress) internal {
         // If user is depositing for the first time, add them to active users list
         if (s_userDeposit[userAddress] == 0) {
@@ -139,22 +301,61 @@ contract TestRafflePool {
     }
 
     function _updateBalanceLogs(address userAddress) internal {
+        // s_lastActiveTimestamp[userAddress] = block.timestamp; // May be rudundant
         s_userTwabs[userAddress].push(BalanceLog({balance: s_userDeposit[userAddress], timestamp: block.timestamp}));
         s_totalDepositTwabs.push(BalanceLog(s_totalUserDeposits, block.timestamp));
     }
 
-    // internal & private view & pure functions
-    function _cleanupUsers() internal {
-        // Replace s_players with s_tempActivePlayers
-        s_activeUsers = s_tempActiveUsers;
-        // Clear the temporary array for the next raffle
-        delete s_tempActiveUsers;
-        // Reinitialise the temporary array
-        s_tempActiveUsers = new address[](0);
+    function _adjustPlatformFee(uint256 newFee) internal {
+        // fee must be between 0 -> 15%
+        if (newFee > 1500) {
+            revert RafflePool__ExceedsMaxProtocolFee();
+        }
+        s_platformFee = newFee;
+        emit ProtocolFeeAdjusted(newFee);
+    }
+
+    function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
+        // 1. Calculate the sum of all TWABs for the time period of interest (`totalTWAB`).
+        // 2. Scale the random number from Chainlink VRF to the range `[0, totalTWAB]` using modulo (`%`). This will give us a "ticket number" in the virtual array.
+        // 3. Iterate over users, summing their TWABs, until the sum exceeds the ticket number. The current user is the winner.
+        emit RandomWord(randomWords[0]);
+        uint256 totalTwab = calculateTwab(address(0), s_lastTimestamp, block.timestamp);
+        uint256 scaledNumber = (randomWords[0] % totalTwab);
+        emit ScaledRandomNumber(scaledNumber);
+        // Initialise a running total of TWABs
+        uint256 runningTotal = 0;
+        address winner;
+        for (uint256 i = 0; i < s_activeUsers.length; i++) {
+            // Calculate TWAB only if a winner has not been found
+            if (winner == address(0)) {
+                runningTotal += calculateTwab(s_activeUsers[i], s_lastTimestamp, block.timestamp);
+                // If the running total exceeds the ticket number and a winner has not yet been determined, set this user as the winner
+                if (runningTotal > scaledNumber && winner == address(0)) {
+                    winner = s_activeUsers[i];
+                }
+            }
+            // If user balance == 0, remove them from the active users list
+            if (s_userDeposit[s_activeUsers[i]] != 0) {
+                s_tempActiveUsers.push(s_activeUsers[i]);
+            }
+        }
+        // After determining the winner
+        _cleanupUsers();
+        s_raffleState = RaffleState.OPEN;
+        // Update the last timestamp for next raffle
+        s_lastTimestamp = block.timestamp;
+        // Allocate stETH raffle rewards to winning user
+        // ToDo: consider case if winning user has 0 balance, will still have been removed from active users list
+        _addBalance(winner, s_stakingRewardsTotal);
+        s_recentWinner = winner;
+        emit PickedWinner(winner, s_stakingRewardsTotal);
+        // reset staking rewards count to zero
+        s_stakingRewardsTotal = 0;
     }
 
     // Temporarily public
-    function calculateTwab(address userAddress, uint256 startTime, uint256 endTime) public view returns (uint256) {
+    function calculateTwab(address userAddress, uint256 s_startTime, uint256 s_endTime) public view returns (uint256) {
         BalanceLog[] storage twabs; // pointer to storage-based arrays
         if (userAddress == address(0)) {
             twabs = s_totalDepositTwabs;
@@ -162,57 +363,55 @@ contract TestRafflePool {
             twabs = s_userTwabs[userAddress];
         }
 
-        uint256 precedingIndex = findPrecedingTimeStampIndex(twabs, startTime);
+        uint256 precedingIndex = findPrecedingTimestampIndex(twabs, s_startTime);
 
         uint256 balanceCumulative = 0;
-        uint256 prevTimeStamp = startTime;
+        uint256 prevTimestamp = s_startTime;
         uint256 prevBalance = precedingIndex == type(uint256).max ? 0 : twabs[precedingIndex].balance;
 
-        // Reset precedingIndex for the loop if it was set to max value
-        if (precedingIndex == type(uint256).max) {
-            precedingIndex = ~precedingIndex; // This will set it to -1 when interpreted as a signed integer
-        }
+        // Start loop from 0 if precedingIndex is max, otherwise from precedingIndex + 1
+        uint256 loopStart = (precedingIndex == type(uint256).max) ? 0 : precedingIndex + 1;
 
-        for (uint256 i = precedingIndex + 1; i < twabs.length; i++) {
-            if (twabs[i].timestamp > endTime) {
+        for (uint256 i = loopStart; i < twabs.length; i++) {
+            if (twabs[i].timestamp > s_endTime) {
                 break;
             }
 
-            uint256 duration = uint256(twabs[i].timestamp - prevTimeStamp);
+            uint256 duration = uint256(twabs[i].timestamp - prevTimestamp);
             balanceCumulative += prevBalance * duration;
 
-            prevTimeStamp = twabs[i].timestamp;
+            prevTimestamp = twabs[i].timestamp;
             prevBalance = twabs[i].balance;
         }
 
-        uint256 finalDuration = uint256(endTime - prevTimeStamp);
+        uint256 finalDuration = uint256(s_endTime - prevTimestamp);
         balanceCumulative += prevBalance * finalDuration;
 
-        return balanceCumulative / (endTime - startTime);
+        return balanceCumulative / (s_endTime - s_startTime);
     }
 
-    function findPrecedingTimeStampIndex(BalanceLog[] storage twabs, uint256 _s_lastTimeStamp)
+    function findPrecedingTimestampIndex(BalanceLog[] storage twabs, uint256 _s_lastTimestamp)
         internal
         view
         returns (uint256)
     {
+        uint256 result = type(uint256).max; // Initialising with "not found" value
         if (twabs.length == 0) {
-            return type(uint256).max; // Empty array case
+            return result; // Empty array case
         }
 
-        if (twabs[0].timestamp > _s_lastTimeStamp) {
-            return type(uint256).max; // joined after current period
+        if (twabs[0].timestamp > _s_lastTimestamp) {
+            return result; // joined after current period
         }
 
         uint256 start = 0;
         uint256 end = twabs.length - 1;
         uint256 mid;
-        uint256 result = type(uint256).max; // Initialising with "not found" value
 
         while (start <= end) {
             mid = start + (end - start) / 2;
 
-            if (twabs[mid].timestamp <= _s_lastTimeStamp) {
+            if (twabs[mid].timestamp <= _s_lastTimestamp) {
                 result = mid; // Found a potential preceding timestamp
                 start = mid + 1;
             } else {
@@ -222,18 +421,51 @@ contract TestRafflePool {
                 end = mid - 1;
             }
         }
+
         return result;
     }
 
+    // internal & private view & pure functions
+
+    function _checkRaffleState() internal view {
+        if (s_raffleState != RaffleState.OPEN) {
+            revert RafflePool__RaffleDrawInProgress();
+        }
+    }
+
+    // Swap the roles of s_activeUsers and s_tempActiveUsers
+    function _cleanupUsers() internal {
+        // define new storage pointer variable temp & make it point to where s_activeUsers currently points in storage
+        address[] storage temp = s_activeUsers;
+        // make s_activeUsers point to where s_tempActiveUsers is pointing
+        s_activeUsers = s_tempActiveUsers;
+        // make s_tempActiveUsers point to where temp is pointing.
+        // since temp was originally pointing to where s_activeUsers was stored,
+        // s_tempActiveUsers now points there. This makes s_tempActiveUsers the temporary array for the next raffle.
+        s_tempActiveUsers = temp;
+
+        // Clear the now-temporary array for the next raffle
+        delete s_tempActiveUsers;
+    }
+
+    // function _isActiveForRaffle(address user) internal view returns (bool) {
+    //     return (s_userDeposit[user] > 0) || (s_lastActiveTimestamp[user] > s_lastTimestamp);
+    // }
+
+    ///////////////////
     // Getter Functions
+    ///////////////////
+    /* Return total stETH contract balance */
     function getTotalBalance() external view returns (uint256) {
         return i_stETH.balanceOf(address(this));
     }
 
+    /* Return user's stETH contract balance */
     function getUserDeposit(address user) external view returns (uint256) {
         return s_userDeposit[user];
     }
 
+    /* Return value of total user deposits (i.e. exactly equals cumulative sum of user deposits, excludes subsequent stETH rebases) */
     function getTotalUserDeposits() external view returns (uint256) {
         return s_totalUserDeposits;
     }
@@ -242,15 +474,48 @@ contract TestRafflePool {
         return s_stakingRewardsTotal;
     }
 
-    function getActiveDepositors() external view returns (address[] memory) {
-        return s_activeUsers;
+    function getRaffleState() external view returns (RaffleState) {
+        return s_raffleState;
     }
 
     function getActiveDepositorsCount() external view returns (uint256) {
         return s_activeUsers.length;
     }
 
-    // Temporary getters
+    function getRecentWinner() external view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getLastTimestamp() external view returns (uint256) {
+        return s_lastTimestamp;
+    }
+
+    function getInterval() external view returns (uint256) {
+        return i_interval;
+    }
+
+    function getPlatformFee() external view returns (uint256) {
+        return s_platformFee;
+    }
+
+    function getPlatformFeeBalance() external view returns (uint256) {
+        return s_platformFeeBalance;
+    }
+
+    function getLastUserBalanceLog(address user) external view returns (BalanceLog memory) {
+        return s_userTwabs[user][s_userTwabs[user].length - 1];
+    }
+
+    function getLastTotalBalanceLog() external view returns (BalanceLog memory) {
+        return s_totalDepositTwabs[s_totalDepositTwabs.length - 1];
+    }
+
+    // Temporary getters for testing
+    // note: may want to fetch in batches
+    function getActiveDepositors() external view returns (address[] memory) {
+        return s_activeUsers;
+    }
+
     function getUserBalanceLog(address user) external view returns (BalanceLog[] memory) {
         return s_userTwabs[user];
     }
