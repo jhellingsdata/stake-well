@@ -10,6 +10,8 @@
     "dev": "next dev",
     "dev:gen": "npm run wagmi && next dev",
     "dev:foundry": "npm run dev & wagmi generate --watch & npm run anvil",
+    "slither:raffle": "slither ./contracts/src/RafflePool.sol  --solc-remaps '@openzeppelin=contracts/lib/openzeppelin-contracts @chainlink/contracts=contracts/lib/chainlink-brownie-contracts/contracts' --exclude naming-convention",
+    "slither:donation": "slither ./contracts/src/DonationPool.sol  --solc-remaps '@openzeppelin=contracts/lib/openzeppelin-contracts' --exclude naming-convention",
     "start": "next start",
     "lint": "next lint",
     "wagmi": "wagmi generate"

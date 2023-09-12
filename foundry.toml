@@ -24,7 +24,7 @@ goerli = "${GOERLI_RPC_URL}"
 
 # Fuzz run options - adjust as needed for your fuzzing campaign
 [fuzz]
-runs = 1000               # the number of fuzz runs for tests
+runs = 10000               # the number of fuzz runs for tests
 max_local_rejects = 66000 # max number of individual inputs that may be rejected before the test aborts
 max_test_rejects = 1      # max number of tests that may be rejected before the test aborts      
 

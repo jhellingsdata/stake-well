@@ -52,9 +52,9 @@ You will first need to set up your `.env` to tell Forge where to deploy your con
 
 Go ahead and open up your `.env` file, and enter the following env vars:
 
-- `ETHERSCAN_API_KEY`: Your Etherscan API Key.
-- `FORGE_RPC_URL`: The RPC URL of the network to deploy to.
-- `FORGE_PRIVATE_KEY`: The private key of the wallet you want to deploy from.
+-   `ETHERSCAN_API_KEY`: Your Etherscan API Key.
+-   `FORGE_RPC_URL`: The RPC URL of the network to deploy to.
+-   `FORGE_PRIVATE_KEY`: The private key of the wallet you want to deploy from.
 
 ## Deploy contract
 
@@ -84,9 +84,9 @@ npm run dev:foundry
 
 This will:
 
-- Start a Next.js dev server,
-- Start the `@wagmi/cli` in [**watch mode**](https://wagmi.sh/cli/commands/generate#options) to listen to changes in our contracts, and instantly generate code,
-- Start an Anvil instance (Mainnet Fork) on an RPC URL.
+-   Start a Next.js dev server,
+-   Start the `@wagmi/cli` in [**watch mode**](https://wagmi.sh/cli/commands/generate#options) to listen to changes in our contracts, and instantly generate code,
+-   Start an Anvil instance (Mainnet Fork) on an RPC URL.
 
 ## Deploy our contract to Anvil
 
@@ -108,9 +108,26 @@ Head to [localhost:3000](http://localhost:3000) in your browser, connect your wa
 
 To learn more about [Next.js](https://nextjs.org), [Foundry](https://book.getfoundry.sh/) or [wagmi](https://wagmi.sh), check out the following resources:
 
-- [Foundry Documentation](https://book.getfoundry.sh/) – learn more about the Foundry stack (Anvil, Forge, etc).
-- [wagmi Documentation](https://wagmi.sh) – learn about wagmi Hooks and API.
-- [wagmi Examples](https://wagmi.sh/examples/connect-wallet) – a suite of simple examples using wagmi.
-- [@wagmi/cli Documentation](https://wagmi.sh/cli) – learn more about the wagmi CLI.
-- [Next.js Documentation](https://nextjs.org/docs) learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+-   [Foundry Documentation](https://book.getfoundry.sh/) – learn more about the Foundry stack (Anvil, Forge, etc).
+-   [wagmi Documentation](https://wagmi.sh) – learn about wagmi Hooks and API.
+-   [wagmi Examples](https://wagmi.sh/examples/connect-wallet) – a suite of simple examples using wagmi.
+-   [@wagmi/cli Documentation](https://wagmi.sh/cli) – learn more about the wagmi CLI.
+-   [Next.js Documentation](https://nextjs.org/docs) learn about Next.js features and API.
+-   [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+---
+
+Setting up slither - https://github.com/crytic/slither/wiki/Developer-installation
+
+git clone https://github.com/crytic/slither
+cd slither
+git checkout dev
+make dev
+
+source ./env/bin/activate
+
+return to project root
+
+To run on single contract, need to specify remappings, so can add script to package.json
+
+npm run slither:raffle
