@@ -103,7 +103,7 @@ contract DonationPool is AccessControl, ReentrancyGuard {
     function depositEth() external payable nonReentrant {
         uint256 beforeDeposit = i_stETH.balanceOf(address(this));
         (bool success,) = address(i_stETH).call{value: msg.value}("");
-        uint256 shares = i_stETH.submit{value: 1 ether}(address(0));
+        // uint256 shares = i_stETH.submit{value: msg.value}(address(0));
         if (!success) revert DonationPool__MintFailed();
         uint256 afterDeposit = i_stETH.balanceOf(address(this));
         uint256 actualMintedAmount = afterDeposit - beforeDeposit;
@@ -143,11 +143,11 @@ contract DonationPool is AccessControl, ReentrancyGuard {
         if (s_userDeposit[msg.sender] < amount) {
             revert DonationPool__InsufficientStEthBalance();
         }
-        // Update user deposit balance & total deposit balance & logs
+        // Update user deposit balance & emit event
         _subtractBalance(msg.sender, amount);
+        emit WithdrawSuccessful(msg.sender, amount, s_userDeposit[msg.sender]);
         bool success = i_stETH.transfer(msg.sender, amount);
         if (!success) revert DonationPool__WithdrawalFailed();
-        emit WithdrawSuccessful(msg.sender, amount, s_userDeposit[msg.sender]);
     }
 
     function endCampaign() external {

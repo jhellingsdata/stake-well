@@ -63,13 +63,13 @@ contract DonationFactory {
     ///////////////////
     // Getter Functions
     ///////////////////
-    function getCampaignInfo(uint256 _index)
-        external
-        view
-        returns (address, address, address[] memory, uint256, uint256)
-    {
-        return donationPools[_index].getCampaignInfo();
-    }
+    // function getCampaignInfo(uint256 _index)
+    //     external
+    //     view
+    //     returns (address, address, address[] memory, uint256, uint256)
+    // {
+    //     return donationPools[_index].getCampaignInfo();
+    // }
 
     function getCampaignCount() external view returns (uint256) {
         return donationPools.length;
