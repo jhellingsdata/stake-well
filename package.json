@@ -4,6 +4,7 @@
     "private": true,
     "scripts": {
         "anvil": "source .env && anvil --fork-url $ANVIL_FORK_URL --chain-id $ANVIL_CHAIN_ID",
+        "build": "next build",
         "deploy": "source .env && forge create contracts/src/StakePool.sol:StakePool --rpc-url $FORGE_RPC_URL --constructor-args $STETH_ADDRESS --private-key $FORGE_PRIVATE_KEY --etherscan-api-key $ETHERSCAN_API_KEY --verify",
         "deploy:anvil": "source .env && forge create contracts/src/StakePool.sol:StakePool --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         "dev": "next dev",
@@ -31,6 +32,7 @@
         "autoprefixer": "^10.4.15",
         "eslint": "^8.15.0",
         "eslint-config-next": "^12.1.6",
+        "eslint-config-prettier": "^9.0.0",
         "postcss": "^8.4.28",
         "prettier": "^3.0.3",
         "prettier-plugin-tailwindcss": "^0.5.4",
