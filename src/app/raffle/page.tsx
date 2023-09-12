@@ -1,15 +1,13 @@
-import { PoolUserBalance } from '@/components/PoolUserBalance'
-import RaffleDetails from '@/components/RaffleDetails'
-import { PoolTransaction } from '@/components/RaffleTransaction'
+import { PoolUserBalance } from '@/components/PoolUserBalance';
+import RaffleDetails from '@/components/RaffleDetails';
+import { PoolTransaction } from '@/components/RaffleTransaction';
 
-export function Page() {
+export default function Page() {
     return (
         <>
             <RaffleDetails />
             <PoolUserBalance />
             {/* <PoolTransaction /> */}
         </>
-    )
+    );
 }
-
-export default Page

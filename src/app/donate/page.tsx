@@ -1,18 +1,15 @@
-import { Account } from '@/components/Account'
-import { Balance } from '@/components/Balance'
-import { Connect } from '@/components/Connect'
-import { Connected } from '@/components/Connected'
-import CreateCampaign from '@/components/CreateCampaign'
+import { Account } from '@/components/Account';
+import { Balance } from '@/components/Balance';
+import { Connect } from '@/components/Connect';
+import { Connected } from '@/components/Connected';
+import CreateCampaign from '@/components/CreateCampaign';
 
-export function Page() {
+export default function Page() {
     return (
         <>
             <div className="mx-auto pt-10">
                 <CreateCampaign />
             </div>
-
         </>
-    )
+    );
 }
-
-export default Page

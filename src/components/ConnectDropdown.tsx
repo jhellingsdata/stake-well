@@ -76,7 +76,7 @@ export function ConnectDropdown() {
 
             return () => clearTimeout(timer); // Cleanup on unmount
         }
-    }, [error]);
+    }, [error, reset]);
 
     return (
         <div
