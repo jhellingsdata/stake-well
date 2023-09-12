@@ -45,7 +45,7 @@ contract HelperConfig is Script {
             vrfCoordinatorV2: 0x271682DEB8C4E0901D1a1550aD2e64D568E69909,
             gasLane: 0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805,
             subscriptionId: 0,
-            callbackGasLimit: 500000,
+            callbackGasLimit: 1000000,
             numWords: 1,
             link: 0x514910771AF9Ca656af840dff83E8264EcF986CA,
             deployerPrivateKey: vm.envUint("PRIVATE_KEY")
@@ -59,7 +59,7 @@ contract HelperConfig is Script {
             vrfCoordinatorV2: 0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D,
             gasLane: 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15,
             subscriptionId: 13164,
-            callbackGasLimit: 500000,
+            callbackGasLimit: 1000000,
             numWords: 1,
             link: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB,
             deployerPrivateKey: vm.envUint("GOERLI_PRIVATE_KEY")
@@ -90,7 +90,7 @@ contract HelperConfig is Script {
             vrfCoordinatorV2: address(vrfCoordinatorV2Mock),
             gasLane: 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15,
             subscriptionId: 0, // update with our subId
-            callbackGasLimit: 500000,
+            callbackGasLimit: 2500000,
             numWords: 1,
             link: address(link),
             deployerPrivateKey: DEFAULT_ANVIL_PRIVATE_KEY
