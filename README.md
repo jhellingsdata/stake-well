@@ -1,13 +1,7 @@
 # StakeWell Protocol
 
----
+#### View Deployed Contracts on Goerli Testnet
 
-Setting up slither - https://github.com/crytic/slither/wiki/Developer-installation
+RafflePool: https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d
 
-source ./env/bin/activate
-
-return to project root
-
-To run on single contract, need to specify remappings, so can add script to package.json
-
-npm run slither:raffle
+DonationFactory: https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE

@@ -7,10 +7,8 @@ import { InfoIconProps } from '../types';
 import { Connected } from '@/components/Connected';
 import { DualOptionToggle } from '@/components/ToggleSwitch';
 import { useAccountBalance, useAccountTokenBalance } from '../hooks/useBalance';
-import { formatBalance } from 'src/utils/formatBalanceDecimals';
 import { Deposit } from './Deposit';
-import { DepositPermit } from './DepositPermit';
-import { DepositPermit2 } from './DepositPermit2';
+import { DepositStEthPermit } from './DepositPermit';
 
 export function PoolDeposit() {
     const [ethWalletBalance, setEthWalletBalance] = useState(0);
@@ -64,8 +62,7 @@ export function PoolDeposit() {
                         </div>
                     </div>
                     {depositEth === 1 && <Deposit />}
-                    {/* {depositStEth === 1 && <DepositPermit />} */}
-                    {depositStEth === 1 && <DepositPermit2 />}
+                    {depositStEth === 1 && <DepositStEthPermit />}
                 </Connected>
             </div>
         </>

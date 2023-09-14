@@ -50,6 +50,7 @@ const DepositEth = () => {
             setTempState('Success!');
             timeoutId = setTimeout(() => {
                 reset();
+                setTempState(null);
             }, 5000); // 5 seconds
         }
         return () => clearTimeout(timeoutId);
@@ -67,6 +68,7 @@ const DepositEth = () => {
         buttonStyles =
             'bg-gradient-to-r from-pink-500 via-violet-500 to-yellow-500 text-white background-animate';
     } else if (isSuccess) {
+        setValue('');
         buttonTitle = 'Success!';
         buttonStyles =
             'bg-gradient-to-tl from-violet-500 to-violet-600text-white ';

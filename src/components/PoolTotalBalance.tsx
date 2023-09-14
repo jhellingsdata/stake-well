@@ -1,26 +1,29 @@
-'use client'
+'use client';
 
-import { formatEther, BaseError } from 'viem'
-import { useRafflePoolGetTotalBalance } from '../generated'
+import { formatEther, BaseError } from 'viem';
+import { useRafflePoolGetTotalBalance } from '../generated';
 
 interface PoolTotalBalanceProps {
     decimals?: number;
 }
 
-export const PoolTotalBalance: React.FC<PoolTotalBalanceProps> = ({ decimals = 18 }) => {
+export const PoolTotalBalance: React.FC<PoolTotalBalanceProps> = ({
+    decimals = 18,
+}) => {
     return (
         <div>
             <TotalBalance decimals={decimals} />
         </div>
-    )
-}
+    );
+};
 
 interface TotalBalanceProps {
     decimals: number;
 }
 
 function TotalBalance({ decimals }: TotalBalanceProps) {
-    const { data, error, isLoading, isSuccess, refetch } = useRafflePoolGetTotalBalance()
+    const { data, error, isLoading, isSuccess, refetch } =
+        useRafflePoolGetTotalBalance({ watch: true });
 
     const formatBalance = (balance: bigint) => {
         let etherString = balance.toString();
@@ -31,17 +34,21 @@ function TotalBalance({ decimals }: TotalBalanceProps) {
             etherString.slice(0, -decimals) +
             '.' +
             etherString.slice(-decimals).slice(0, decimals)
-        )
-    }
+        );
+    };
 
     return (
         <div>
-            Total stETH balance: {' '}
-            {isLoading ? 'Loading...' : data ? formatBalance(data) : 'Data not available'}
+            Total stETH balance:{' '}
+            {isLoading
+                ? 'Loading...'
+                : data
+                ? formatBalance(data)
+                : 'Data not available'}
             <button onClick={() => refetch()}>
                 {isLoading ? 'fetching...' : 'fetch'}
             </button>
             {error && <div>{(error as BaseError).shortMessage}</div>}
         </div>
-    )
+    );
 }
