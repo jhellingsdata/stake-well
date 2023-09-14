@@ -49,7 +49,9 @@ export function ConnectDropdown() {
             'tracking-wide rounded-3xl px-4 bg-red-500 text-normal mr-4 ml-4';
     }
 
-    const [leaveTimeout, setLeaveTimeout] = useState(null);
+    const [leaveTimeout, setLeaveTimeout] = useState<ReturnType<
+        typeof setTimeout
+    > | null>(null); // will adjust based on the environment we're in (Node.js or browser).
 
     const handleMouseLeave = () => {
         // Start a timer when mouse leaves, and close dropdown after the delay
@@ -62,7 +64,9 @@ export function ConnectDropdown() {
 
     const handleMouseEnterDropdown = () => {
         // If the mouse enters the dropdown before the delay is over, clear the timer
-        clearTimeout(leaveTimeout);
+        if (leaveTimeout)
+            // use a type assertion to ensure correct type inference within the condition
+            clearTimeout(leaveTimeout as ReturnType<typeof setTimeout>);
     };
 
     // Effect to listen to error changes

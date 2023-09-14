@@ -160,15 +160,30 @@ const DepositPermit = () => {
                 >
                     {buttonText}
                 </button> */}
-                <CustomButton
-                    title={'Deposit'}
-                    containerStyles={`w-full rounded-xl mt-2`}
-                    handleClick={(e) => {
-                        e.preventDefault(); // stops page refresh
-                        handleDeposit();
-                    }}
-                    disabled={!isValid}
-                />
+                {/* Render `Sign` button if user hasn't yet signed permit message, so idle or pending */}
+                {interactionStatus !== 'signed' && (
+                    <CustomButton
+                        title={'Deposit'}
+                        containerStyles={`w-full rounded-xl mt-2`}
+                        handleClick={(e) => {
+                            e.preventDefault(); // stops page refresh
+                            handleDeposit();
+                        }}
+                        disabled={!isValid}
+                    />
+                )}
+                {/* Render deposit button if user has signed permit message */}
+                {interactionStatus === 'signed' && (
+                    <CustomButton
+                        title={'Deposit'}
+                        containerStyles={`w-full rounded-xl mt-2`}
+                        handleClick={(e) => {
+                            e.preventDefault(); // stops page refresh
+                            handleDeposit();
+                        }}
+                        disabled={!isValid}
+                    />
+                )}
             </form>
         </>
     );
