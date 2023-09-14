@@ -49,6 +49,7 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     error RafflePool__StEthTransferFailed();
     error RafflePool__WithdrawalFailed();
     error RafflePool__InsufficientStEthBalance();
+    error RafflePool__InsufficientFeeBalance();
     error RafflePool__UpkeepNotNeeded(uint256 raffleBalance, uint256 raffleState);
     error RafflePool__ExceedsMaxProtocolFee();
     error ReentrancyGuardReentrantCall();
@@ -248,6 +249,10 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     // checks-effects-interactions pattern
 
     function withdrawPlatformFee() external onlyOwner {
+        // revert if platform fee balance = 0
+        if (s_platformFeeBalance == 0) {
+            revert RafflePool__InsufficientFeeBalance();
+        }
         uint256 platformFeeBalance = s_platformFeeBalance;
         s_platformFeeBalance = 0;
         emit ProtocolFeeWithdrawn(platformFeeBalance);
@@ -262,17 +267,6 @@ contract RafflePool is VRFConsumerBaseV2, Ownable {
     ///////////////////
     // Public Functions
     ///////////////////
-
-    // // Called periodically to update the staking rewards
-    // function updateStakingRewards() external {
-    //     uint256 currentBalance = i_stETH.balanceOf(address(this));
-    //     uint256 expectedBalance = s_totalUserDeposits + s_stakingRewardsTotal;
-
-    //     if (currentBalance > expectedBalance) {
-    //         s_stakingRewardsTotal += currentBalance - expectedBalance;
-    //         emit StakingRewardsUpdated(s_stakingRewardsTotal);
-    //     }
-    // }
 
     /*
     * @dev Used by Chainlink Automation nodes call to determine if the contract needs upkeep.

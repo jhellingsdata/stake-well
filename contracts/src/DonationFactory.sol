@@ -12,10 +12,7 @@ contract DonationFactory {
     error DonationFactory__NotAuthorisedToCreate();
     error DonationFactory__WithdrawalFailed();
     error DonationFactory__ExceedsMaxProtocolFee();
-
-    ///////////////////
-    // Type Declarations
-    ///////////////////
+    error ReentrancyGuardReentrantCall();
 
     ///////////////////
     // State Variables
@@ -25,7 +22,7 @@ contract DonationFactory {
     mapping(address => uint256) public donationPoolIndex;
     DonationPool[] private s_donationPools;
     uint256 private s_platformFee;
-    uint256 private s_platformFeeBalance;
+    uint256 private locked = 1; // Solmate reentrancy guard
 
     ///////////////////
     // Events
@@ -46,6 +43,15 @@ contract DonationFactory {
         _;
     }
 
+    modifier nonReentrant() virtual {
+        if (locked == 2) {
+            revert ReentrancyGuardReentrantCall();
+        }
+        locked = 2;
+        _;
+        locked = 1;
+    }
+
     ///////////////////
     // Functions     //
     ///////////////////
@@ -59,17 +65,13 @@ contract DonationFactory {
     // External Functions
     ///////////////////
     function createDonationPool(address _manager, address _beneficiary, string memory _title) external {
-        DonationPool newDonationPool = new DonationPool(address(i_stETH), _manager, _beneficiary);
+        DonationPool newDonationPool = new DonationPool(address(i_stETH), _manager, _beneficiary, s_platformFee);
         s_donationPools.push(newDonationPool);
         emit DonationPoolCreated(address(newDonationPool), _beneficiary, s_donationPools.length - 1, _title);
     }
 
-    // Set up function(s) to allow creation of a donation pool by someone other than factory owner
-    function temporaryAuthorisation() external {}
-
     function withdrawPlatformFee() external onlyOwner {
-        uint256 platformFeeBalance = s_platformFeeBalance;
-        s_platformFeeBalance = 0;
+        uint256 platformFeeBalance = i_stETH.balanceOf(address(this));
         emit ProtocolFeeWithdrawn(platformFeeBalance);
         bool success = i_stETH.transfer(msg.sender, platformFeeBalance);
         if (!success) revert DonationFactory__WithdrawalFailed();
@@ -124,5 +126,13 @@ contract DonationFactory {
 
     function getCampaignRewardsBalance(uint256 _index) external view returns (uint256) {
         return i_stETH.balanceOf(address(s_donationPools[_index])) - s_donationPools[_index].getCampaignDepositBalance();
+    }
+
+    function getCurrentPlatformFee() external view returns (uint256) {
+        return s_platformFee;
+    }
+
+    function getFactoryFeeBalance() external view returns (uint256) {
+        return i_stETH.balanceOf(address(this));
     }
 }

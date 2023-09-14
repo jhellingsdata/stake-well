@@ -26,23 +26,23 @@ pragma solidity ^0.8.20;
 
 import {IERC20Permit} from "./interfaces/IERC20Permit.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract DonationPool is AccessControl, ReentrancyGuard {
+contract DonationPool is AccessControl {
     ///////////////////
     // Errors
     ///////////////////
     error DonationPool__NeedsMoreThanZero();
     error DonationPool__MintFailed();
     error DonationPool__StEthTransferFailed();
-    error DonationPool__InsufficientAllowance();
+    error DonationPool__InsufficientRewardsBalance();
     error DonationPool__InsufficientStEthBalance();
     error DonationPool__WithdrawalFailed();
     error DonationPool__NotAuthorised();
-
+    error ReentrancyGuardReentrantCall();
     ///////////////////
     // Type Declarations
     ///////////////////
+
     struct Campaign {
         address manager;
         address beneficiary;
@@ -55,8 +55,12 @@ contract DonationPool is AccessControl, ReentrancyGuard {
     // State Variables
     ///////////////////
     IERC20Permit private immutable i_stETH;
+    uint256 private immutable i_platformFee;
+    address private immutable i_factoryAddress;
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+    uint256 private locked = 1; // Solmate reentrancy guard
     Campaign private s_campaign;
 
     // map user address to campaignId mapping to deposit amount
@@ -81,10 +85,19 @@ contract DonationPool is AccessControl, ReentrancyGuard {
         _;
     }
 
+    modifier nonReentrant() virtual {
+        if (locked == 2) {
+            revert ReentrancyGuardReentrantCall();
+        }
+        locked = 2;
+        _;
+        locked = 1;
+    }
+
     ///////////////////
     // Functions
     ///////////////////
-    constructor(address steth, address _manager, address _beneficiary) {
+    constructor(address steth, address _manager, address _beneficiary, uint256 _platformFee) {
         _grantRole(MANAGER_ROLE, _manager);
         i_stETH = IERC20Permit(steth);
         s_campaign = Campaign({
@@ -94,6 +107,8 @@ contract DonationPool is AccessControl, ReentrancyGuard {
             totalDepositBalance: 0,
             totalShares: 0
         });
+        i_platformFee = _platformFee;
+        i_factoryAddress = msg.sender;
     }
 
     ///////////////////
@@ -109,19 +124,6 @@ contract DonationPool is AccessControl, ReentrancyGuard {
         uint256 actualMintedAmount = afterDeposit - beforeDeposit;
         _addBalance(msg.sender, actualMintedAmount);
         emit MintAndDepositSuccessful(msg.sender, actualMintedAmount, s_campaign.totalDepositBalance);
-    }
-
-    function depositStEth(uint256 amount) external nonReentrant moreThanZero(amount) {
-        // Ensure the allowance is sufficient
-        uint256 allowance = i_stETH.allowance(msg.sender, address(this));
-        if (allowance < amount) revert DonationPool__InsufficientAllowance();
-        uint256 beforeDeposit = i_stETH.balanceOf(address(this));
-        bool success = i_stETH.transferFrom(msg.sender, address(this), amount);
-        if (!success) revert DonationPool__StEthTransferFailed();
-        uint256 afterDeposit = i_stETH.balanceOf(address(this));
-        uint256 actualAmount = afterDeposit - beforeDeposit;
-        _addBalance(msg.sender, actualAmount);
-        emit DepositSuccessful(msg.sender, actualAmount, s_userDeposit[msg.sender]);
     }
 
     function depositStEthWithPermit(uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
@@ -150,30 +152,30 @@ contract DonationPool is AccessControl, ReentrancyGuard {
         if (!success) revert DonationPool__WithdrawalFailed();
     }
 
-    function endCampaign() external {
-        // How should we handle someone ending a campaign? What should we do with user deposits?
-        // To end a campaign:
-        // 1. Manager withdrawals all rewards (if any) to beneficiary
-        // 2. Manager initiates transfer of user deposits back to user's wallets
-    }
-
-    function withdrawRewards() external {
+    function withdrawRewards() external nonReentrant {
+        // calculate fee amount and send to factory contract
         _checkRole(MANAGER_ROLE, msg.sender);
         // update truthful rewards total
+        uint256 poolBalance = i_stETH.balanceOf(address(this));
+        // revert if donationAmount is < userDeposits
+        if (poolBalance <= s_campaign.totalDepositBalance) revert DonationPool__InsufficientRewardsBalance();
         uint256 totalRewards = i_stETH.balanceOf(address(this)) - s_campaign.totalDepositBalance;
-        bool success = i_stETH.transfer(s_campaign.beneficiary, totalRewards);
-        if (!success) revert DonationPool__WithdrawalFailed();
-        emit RewardsWithdrawSuccessful(s_campaign.beneficiary, totalRewards);
-    }
+        // split staking rewards between platform fee and raffle prize
+        uint256 platformFeeAmount = (totalRewards * i_platformFee) / 10000;
+        uint256 donationAmount = totalRewards - platformFeeAmount;
 
-    ///////////////////
-    // Public Functions
-    ///////////////////
+        emit RewardsWithdrawSuccessful(s_campaign.beneficiary, donationAmount);
+        bool feeSuccess = i_stETH.transfer(i_factoryAddress, platformFeeAmount);
+        bool success = i_stETH.transfer(s_campaign.beneficiary, donationAmount);
+        // revert if either withdrawal failed
+        if (!success || !feeSuccess) revert DonationPool__WithdrawalFailed();
+    }
 
     ///////////////////
     // Internal Functions
     ///////////////////
     function _addBalance(address userAddress, uint256 amount) internal {
+        _addUser(msg.sender);
         s_userDeposit[userAddress] += amount;
         s_campaign.totalDepositBalance += amount;
     }
@@ -181,10 +183,11 @@ contract DonationPool is AccessControl, ReentrancyGuard {
     function _subtractBalance(address userAddress, uint256 amount) internal {
         s_userDeposit[userAddress] -= amount;
         s_campaign.totalDepositBalance -= amount;
+        _removeUser(msg.sender);
     }
 
     // This function can be called before updating the s_userDeposit for a deposit operation
-    function _addPlayer(address _user) internal {
+    function _addUser(address _user) internal {
         if (s_userDeposit[_user] == 0) {
             s_campaign.contributors.push(_user);
             s_userIndex[_user] = s_campaign.contributors.length; // Arrays are 1-indexed in the context of this solution
@@ -192,7 +195,7 @@ contract DonationPool is AccessControl, ReentrancyGuard {
     }
 
     // This function can be called after updating the s_userDeposit for a withdrawal operation
-    function _removePlayer(address _user) internal {
+    function _removeUser(address _user) internal {
         if (s_userDeposit[_user] == 0) {
             uint256 indexToRemove = s_userIndex[_user] - 1; // Adjust for 0-indexed array
             address lastAddress = s_campaign.contributors[s_campaign.contributors.length - 1];
@@ -238,5 +241,21 @@ contract DonationPool is AccessControl, ReentrancyGuard {
 
     function getCampaignRewardsBalance() external view returns (uint256) {
         return i_stETH.balanceOf(address(this)) - s_campaign.totalDepositBalance;
+    }
+
+    function getUserDepositBalance(address userAddress) external view returns (uint256) {
+        return s_userDeposit[userAddress];
+    }
+
+    function getUserContributorsIndex(address userAddress) external view returns (uint256) {
+        return s_userIndex[userAddress];
+    }
+
+    function getFactoryAddress() external view returns (address) {
+        return i_factoryAddress;
+    }
+
+    function getCampaignFee() external view returns (uint256) {
+        return i_platformFee;
     }
 }

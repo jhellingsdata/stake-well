@@ -2,12 +2,12 @@ import {
     useContractRead,
     UseContractReadConfig,
     useContractWrite,
+    Address,
     UseContractWriteConfig,
     usePrepareContractWrite,
     UsePrepareContractWriteConfig,
     useContractEvent,
     UseContractEventConfig,
-    Address,
 } from 'wagmi'
 import {
     ReadContractResult,
@@ -19,17 +19,30 @@ import {
 // DonationFactory
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
 export const donationFactoryABI = [
     {
         stateMutability: 'nonpayable',
         type: 'constructor',
-        inputs: [{ name: 'steth', internalType: 'address', type: 'address' }],
+        inputs: [
+            { name: 'steth', internalType: 'address', type: 'address' },
+            { name: 'platformFee', internalType: 'uint256', type: 'uint256' },
+        ],
+    },
+    {
+        type: 'error',
+        inputs: [],
+        name: 'DonationFactory__ExceedsMaxProtocolFee',
     },
     {
         type: 'error',
         inputs: [],
         name: 'DonationFactory__NotAuthorisedToCreate',
     },
+    { type: 'error', inputs: [], name: 'DonationFactory__WithdrawalFailed' },
+    { type: 'error', inputs: [], name: 'ReentrancyGuardReentrantCall' },
     {
         type: 'event',
         anonymous: false,
@@ -62,6 +75,39 @@ export const donationFactoryABI = [
         name: 'DonationPoolCreated',
     },
     {
+        type: 'event',
+        anonymous: false,
+        inputs: [
+            {
+                name: 'newFee',
+                internalType: 'uint256',
+                type: 'uint256',
+                indexed: false,
+            },
+        ],
+        name: 'ProtocolFeeAdjusted',
+    },
+    {
+        type: 'event',
+        anonymous: false,
+        inputs: [
+            {
+                name: 'amount',
+                internalType: 'uint256',
+                type: 'uint256',
+                indexed: false,
+            },
+        ],
+        name: 'ProtocolFeeWithdrawn',
+    },
+    {
+        stateMutability: 'nonpayable',
+        type: 'function',
+        inputs: [{ name: 'newFee', internalType: 'uint256', type: 'uint256' }],
+        name: 'adjustPlatformFee',
+        outputs: [],
+    },
+    {
         stateMutability: 'nonpayable',
         type: 'function',
         inputs: [
@@ -75,25 +121,105 @@ export const donationFactoryABI = [
     {
         stateMutability: 'view',
         type: 'function',
-        inputs: [],
-        name: 'getCampaignCount',
+        inputs: [{ name: '', internalType: 'address', type: 'address' }],
+        name: 'donationPoolIndex',
         outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     },
     {
         stateMutability: 'view',
         type: 'function',
-        inputs: [{ name: '', internalType: 'address', type: 'address' }],
-        name: 'isDonationPool',
-        outputs: [{ name: '', internalType: 'bool', type: 'bool' }],
+        inputs: [{ name: '_index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getCampaignRewardsBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getCurrentPlatformFee',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: 'index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getDonationPoolAddress',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: '_index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getDonationPoolBeneficiary',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: '_index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getDonationPoolContributorsCount',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: '_index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getDonationPoolDepositBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [
+            { name: '_donationPool', internalType: 'address', type: 'address' },
+        ],
+        name: 'getDonationPoolIndex',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: '_index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getDonationPoolManager',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getDonationPoolsCount',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getFactoryFeeBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     },
     {
         stateMutability: 'nonpayable',
         type: 'function',
         inputs: [],
-        name: 'temporaryAuthorisation',
+        name: 'withdrawPlatformFee',
         outputs: [],
     },
 ] as const
+
+/**
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export const donationFactoryAddress = {
+    5: '0x9eDA587356793083C7b91E622b8e666A654Ca0EE',
+} as const
+
+/**
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export const donationFactoryConfig = {
+    address: donationFactoryAddress,
+    abi: donationFactoryABI,
+} as const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DonationPool
@@ -107,6 +233,7 @@ export const donationPoolABI = [
             { name: 'steth', internalType: 'address', type: 'address' },
             { name: '_manager', internalType: 'address', type: 'address' },
             { name: '_beneficiary', internalType: 'address', type: 'address' },
+            { name: '_platformFee', internalType: 'uint256', type: 'uint256' },
         ],
     },
     { type: 'error', inputs: [], name: 'AccessControlBadConfirmation' },
@@ -118,7 +245,11 @@ export const donationPoolABI = [
         ],
         name: 'AccessControlUnauthorizedAccount',
     },
-    { type: 'error', inputs: [], name: 'DonationPool__InsufficientAllowance' },
+    {
+        type: 'error',
+        inputs: [],
+        name: 'DonationPool__InsufficientRewardsBalance',
+    },
     {
         type: 'error',
         inputs: [],
@@ -314,17 +445,17 @@ export const donationPoolABI = [
         outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
     },
     {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'OPERATOR_ROLE',
+        outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    },
+    {
         stateMutability: 'payable',
         type: 'function',
         inputs: [],
         name: 'depositEth',
-        outputs: [],
-    },
-    {
-        stateMutability: 'nonpayable',
-        type: 'function',
-        inputs: [{ name: 'amount', internalType: 'uint256', type: 'uint256' }],
-        name: 'depositStEth',
         outputs: [],
     },
     {
@@ -341,18 +472,60 @@ export const donationPoolABI = [
         outputs: [],
     },
     {
-        stateMutability: 'nonpayable',
+        stateMutability: 'view',
         type: 'function',
         inputs: [],
-        name: 'endCampaign',
-        outputs: [],
+        name: 'getCampaignBeneficiary',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
     },
     {
         stateMutability: 'view',
         type: 'function',
         inputs: [],
-        name: 'getCampaignInfo',
-        outputs: [{ name: '', internalType: 'address[]', type: 'address[]' }],
+        name: 'getCampaignDepositBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getCampaignFee',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getCampaignManager',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getCampaignRewardsBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [{ name: 'index', internalType: 'uint256', type: 'uint256' }],
+        name: 'getContributorAddress',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getContributorCount',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [],
+        name: 'getFactoryAddress',
+        outputs: [{ name: '', internalType: 'address', type: 'address' }],
     },
     {
         stateMutability: 'view',
@@ -360,6 +533,24 @@ export const donationPoolABI = [
         inputs: [{ name: 'role', internalType: 'bytes32', type: 'bytes32' }],
         name: 'getRoleAdmin',
         outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [
+            { name: 'userAddress', internalType: 'address', type: 'address' },
+        ],
+        name: 'getUserContributorsIndex',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    },
+    {
+        stateMutability: 'view',
+        type: 'function',
+        inputs: [
+            { name: 'userAddress', internalType: 'address', type: 'address' },
+        ],
+        name: 'getUserDepositBalance',
+        outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
     },
     {
         stateMutability: 'nonpayable',
@@ -640,7 +831,7 @@ export const ierc20PermitABI = [
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export const rafflePoolABI = [
     {
@@ -684,6 +875,7 @@ export const rafflePoolABI = [
     },
     { type: 'error', inputs: [], name: 'RafflePool__ExceedsMaxProtocolFee' },
     { type: 'error', inputs: [], name: 'RafflePool__InsufficientAllowance' },
+    { type: 'error', inputs: [], name: 'RafflePool__InsufficientFeeBalance' },
     { type: 'error', inputs: [], name: 'RafflePool__InsufficientStEthBalance' },
     { type: 'error', inputs: [], name: 'RafflePool__MintFailed' },
     { type: 'error', inputs: [], name: 'RafflePool__NeedsMoreThanZero' },
@@ -1196,14 +1388,14 @@ export const rafflePoolABI = [
 ] as const
 
 /**
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export const rafflePoolAddress = {
-    5: '0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062',
+    5: '0x82276EA98dF755d4AF1324142A236Fe1732E111d',
 } as const
 
 /**
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export const rafflePoolConfig = {
     address: rafflePoolAddress,
@@ -1216,6 +1408,8 @@ export const rafflePoolConfig = {
 
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function useDonationFactoryRead<
     TFunctionName extends string,
@@ -1227,11 +1421,12 @@ export function useDonationFactoryRead<
             TFunctionName,
             TSelectData
         >,
-        'abi'
-    > = {} as any,
+        'abi' | 'address'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return useContractRead({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         ...config,
     } as UseContractReadConfig<
         typeof donationFactoryABI,
@@ -1241,10 +1436,12 @@ export function useDonationFactoryRead<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getCampaignCount"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"donationPoolIndex"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
-export function useDonationFactoryGetCampaignCount<
-    TFunctionName extends 'getCampaignCount',
+export function useDonationFactoryDonationPoolIndex<
+    TFunctionName extends 'donationPoolIndex',
     TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
 >(
     config: Omit<
@@ -1253,12 +1450,13 @@ export function useDonationFactoryGetCampaignCount<
             TFunctionName,
             TSelectData
         >,
-        'abi' | 'functionName'
-    > = {} as any,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return useContractRead({
         abi: donationFactoryABI,
-        functionName: 'getCampaignCount',
+        address: donationFactoryAddress[5],
+        functionName: 'donationPoolIndex',
         ...config,
     } as UseContractReadConfig<
         typeof donationFactoryABI,
@@ -1268,10 +1466,12 @@ export function useDonationFactoryGetCampaignCount<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"isDonationPool"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getCampaignRewardsBalance"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
-export function useDonationFactoryIsDonationPool<
-    TFunctionName extends 'isDonationPool',
+export function useDonationFactoryGetCampaignRewardsBalance<
+    TFunctionName extends 'getCampaignRewardsBalance',
     TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
 >(
     config: Omit<
@@ -1280,12 +1480,283 @@ export function useDonationFactoryIsDonationPool<
             TFunctionName,
             TSelectData
         >,
-        'abi' | 'functionName'
-    > = {} as any,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return useContractRead({
         abi: donationFactoryABI,
-        functionName: 'isDonationPool',
+        address: donationFactoryAddress[5],
+        functionName: 'getCampaignRewardsBalance',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getCurrentPlatformFee"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetCurrentPlatformFee<
+    TFunctionName extends 'getCurrentPlatformFee',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getCurrentPlatformFee',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolAddress"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolAddress<
+    TFunctionName extends 'getDonationPoolAddress',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolAddress',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolBeneficiary"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolBeneficiary<
+    TFunctionName extends 'getDonationPoolBeneficiary',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolBeneficiary',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolContributorsCount"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolContributorsCount<
+    TFunctionName extends 'getDonationPoolContributorsCount',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolContributorsCount',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolDepositBalance"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolDepositBalance<
+    TFunctionName extends 'getDonationPoolDepositBalance',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolDepositBalance',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolIndex"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolIndex<
+    TFunctionName extends 'getDonationPoolIndex',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolIndex',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolManager"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolManager<
+    TFunctionName extends 'getDonationPoolManager',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolManager',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getDonationPoolsCount"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetDonationPoolsCount<
+    TFunctionName extends 'getDonationPoolsCount',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getDonationPoolsCount',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationFactoryABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"getFactoryFeeBalance"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryGetFactoryFeeBalance<
+    TFunctionName extends 'getFactoryFeeBalance',
+    TSelectData = ReadContractResult<typeof donationFactoryABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationFactoryABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractRead({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'getFactoryFeeBalance',
         ...config,
     } as UseContractReadConfig<
         typeof donationFactoryABI,
@@ -1296,10 +1767,13 @@ export function useDonationFactoryIsDonationPool<
 
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationFactoryABI}__.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function useDonationFactoryWrite<
     TFunctionName extends string,
     TMode extends WriteContractMode = undefined,
+    TChainId extends number = keyof typeof donationFactoryAddress,
 >(
     config: TMode extends 'prepared'
         ? UseContractWriteConfig<
@@ -1309,26 +1783,77 @@ export function useDonationFactoryWrite<
               >['request']['abi'],
               TFunctionName,
               TMode
-          >
+          > & { address?: Address; chainId?: TChainId }
         : UseContractWriteConfig<
               typeof donationFactoryABI,
               TFunctionName,
               TMode
           > & {
               abi?: never
+              address?: never
+              chainId?: TChainId
           } = {} as any,
 ) {
     return useContractWrite<typeof donationFactoryABI, TFunctionName, TMode>({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        ...config,
+    } as any)
+}
+
+/**
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"adjustPlatformFee"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryAdjustPlatformFee<
+    TMode extends WriteContractMode = undefined,
+    TChainId extends number = keyof typeof donationFactoryAddress,
+>(
+    config: TMode extends 'prepared'
+        ? UseContractWriteConfig<
+              PrepareWriteContractResult<
+                  typeof donationFactoryABI,
+                  'adjustPlatformFee'
+              >['request']['abi'],
+              'adjustPlatformFee',
+              TMode
+          > & {
+              address?: Address
+              chainId?: TChainId
+              functionName?: 'adjustPlatformFee'
+          }
+        : UseContractWriteConfig<
+              typeof donationFactoryABI,
+              'adjustPlatformFee',
+              TMode
+          > & {
+              abi?: never
+              address?: never
+              chainId?: TChainId
+              functionName?: 'adjustPlatformFee'
+          } = {} as any,
+) {
+    return useContractWrite<
+        typeof donationFactoryABI,
+        'adjustPlatformFee',
+        TMode
+    >({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'adjustPlatformFee',
         ...config,
     } as any)
 }
 
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"createDonationPool"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function useDonationFactoryCreateDonationPool<
     TMode extends WriteContractMode = undefined,
+    TChainId extends number = keyof typeof donationFactoryAddress,
 >(
     config: TMode extends 'prepared'
         ? UseContractWriteConfig<
@@ -1338,13 +1863,19 @@ export function useDonationFactoryCreateDonationPool<
               >['request']['abi'],
               'createDonationPool',
               TMode
-          > & { functionName?: 'createDonationPool' }
+          > & {
+              address?: Address
+              chainId?: TChainId
+              functionName?: 'createDonationPool'
+          }
         : UseContractWriteConfig<
               typeof donationFactoryABI,
               'createDonationPool',
               TMode
           > & {
               abi?: never
+              address?: never
+              chainId?: TChainId
               functionName?: 'createDonationPool'
           } = {} as any,
 ) {
@@ -1354,57 +1885,71 @@ export function useDonationFactoryCreateDonationPool<
         TMode
     >({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         functionName: 'createDonationPool',
         ...config,
     } as any)
 }
 
 /**
- * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"temporaryAuthorisation"`.
+ * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"withdrawPlatformFee"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
-export function useDonationFactoryTemporaryAuthorisation<
+export function useDonationFactoryWithdrawPlatformFee<
     TMode extends WriteContractMode = undefined,
+    TChainId extends number = keyof typeof donationFactoryAddress,
 >(
     config: TMode extends 'prepared'
         ? UseContractWriteConfig<
               PrepareWriteContractResult<
                   typeof donationFactoryABI,
-                  'temporaryAuthorisation'
+                  'withdrawPlatformFee'
               >['request']['abi'],
-              'temporaryAuthorisation',
+              'withdrawPlatformFee',
               TMode
-          > & { functionName?: 'temporaryAuthorisation' }
+          > & {
+              address?: Address
+              chainId?: TChainId
+              functionName?: 'withdrawPlatformFee'
+          }
         : UseContractWriteConfig<
               typeof donationFactoryABI,
-              'temporaryAuthorisation',
+              'withdrawPlatformFee',
               TMode
           > & {
               abi?: never
-              functionName?: 'temporaryAuthorisation'
+              address?: never
+              chainId?: TChainId
+              functionName?: 'withdrawPlatformFee'
           } = {} as any,
 ) {
     return useContractWrite<
         typeof donationFactoryABI,
-        'temporaryAuthorisation',
+        'withdrawPlatformFee',
         TMode
     >({
         abi: donationFactoryABI,
-        functionName: 'temporaryAuthorisation',
+        address: donationFactoryAddress[5],
+        functionName: 'withdrawPlatformFee',
         ...config,
     } as any)
 }
 
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationFactoryABI}__.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function usePrepareDonationFactoryWrite<TFunctionName extends string>(
     config: Omit<
         UsePrepareContractWriteConfig<typeof donationFactoryABI, TFunctionName>,
-        'abi'
-    > = {} as any,
+        'abi' | 'address'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return usePrepareContractWrite({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         ...config,
     } as UsePrepareContractWriteConfig<
         typeof donationFactoryABI,
@@ -1413,7 +1958,34 @@ export function usePrepareDonationFactoryWrite<TFunctionName extends string>(
 }
 
 /**
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"adjustPlatformFee"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function usePrepareDonationFactoryAdjustPlatformFee(
+    config: Omit<
+        UsePrepareContractWriteConfig<
+            typeof donationFactoryABI,
+            'adjustPlatformFee'
+        >,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return usePrepareContractWrite({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        functionName: 'adjustPlatformFee',
+        ...config,
+    } as UsePrepareContractWriteConfig<
+        typeof donationFactoryABI,
+        'adjustPlatformFee'
+    >)
+}
+
+/**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"createDonationPool"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function usePrepareDonationFactoryCreateDonationPool(
     config: Omit<
@@ -1421,11 +1993,12 @@ export function usePrepareDonationFactoryCreateDonationPool(
             typeof donationFactoryABI,
             'createDonationPool'
         >,
-        'abi' | 'functionName'
-    > = {} as any,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return usePrepareContractWrite({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         functionName: 'createDonationPool',
         ...config,
     } as UsePrepareContractWriteConfig<
@@ -1435,44 +2008,52 @@ export function usePrepareDonationFactoryCreateDonationPool(
 }
 
 /**
- * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"temporaryAuthorisation"`.
+ * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationFactoryABI}__ and `functionName` set to `"withdrawPlatformFee"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
-export function usePrepareDonationFactoryTemporaryAuthorisation(
+export function usePrepareDonationFactoryWithdrawPlatformFee(
     config: Omit<
         UsePrepareContractWriteConfig<
             typeof donationFactoryABI,
-            'temporaryAuthorisation'
+            'withdrawPlatformFee'
         >,
-        'abi' | 'functionName'
-    > = {} as any,
+        'abi' | 'address' | 'functionName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return usePrepareContractWrite({
         abi: donationFactoryABI,
-        functionName: 'temporaryAuthorisation',
+        address: donationFactoryAddress[5],
+        functionName: 'withdrawPlatformFee',
         ...config,
     } as UsePrepareContractWriteConfig<
         typeof donationFactoryABI,
-        'temporaryAuthorisation'
+        'withdrawPlatformFee'
     >)
 }
 
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link donationFactoryABI}__.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function useDonationFactoryEvent<TEventName extends string>(
     config: Omit<
         UseContractEventConfig<typeof donationFactoryABI, TEventName>,
-        'abi'
-    > = {} as any,
+        'abi' | 'address'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return useContractEvent({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         ...config,
     } as UseContractEventConfig<typeof donationFactoryABI, TEventName>)
 }
 
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link donationFactoryABI}__ and `eventName` set to `"DonationPoolCreated"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
  */
 export function useDonationFactoryDonationPoolCreatedEvent(
     config: Omit<
@@ -1480,16 +2061,67 @@ export function useDonationFactoryDonationPoolCreatedEvent(
             typeof donationFactoryABI,
             'DonationPoolCreated'
         >,
-        'abi' | 'eventName'
-    > = {} as any,
+        'abi' | 'address' | 'eventName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
 ) {
     return useContractEvent({
         abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
         eventName: 'DonationPoolCreated',
         ...config,
     } as UseContractEventConfig<
         typeof donationFactoryABI,
         'DonationPoolCreated'
+    >)
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link donationFactoryABI}__ and `eventName` set to `"ProtocolFeeAdjusted"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryProtocolFeeAdjustedEvent(
+    config: Omit<
+        UseContractEventConfig<
+            typeof donationFactoryABI,
+            'ProtocolFeeAdjusted'
+        >,
+        'abi' | 'address' | 'eventName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractEvent({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        eventName: 'ProtocolFeeAdjusted',
+        ...config,
+    } as UseContractEventConfig<
+        typeof donationFactoryABI,
+        'ProtocolFeeAdjusted'
+    >)
+}
+
+/**
+ * Wraps __{@link useContractEvent}__ with `abi` set to __{@link donationFactoryABI}__ and `eventName` set to `"ProtocolFeeWithdrawn"`.
+ *
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x9eDA587356793083C7b91E622b8e666A654Ca0EE)
+ */
+export function useDonationFactoryProtocolFeeWithdrawnEvent(
+    config: Omit<
+        UseContractEventConfig<
+            typeof donationFactoryABI,
+            'ProtocolFeeWithdrawn'
+        >,
+        'abi' | 'address' | 'eventName'
+    > & { chainId?: keyof typeof donationFactoryAddress } = {} as any,
+) {
+    return useContractEvent({
+        abi: donationFactoryABI,
+        address: donationFactoryAddress[5],
+        eventName: 'ProtocolFeeWithdrawn',
+        ...config,
+    } as UseContractEventConfig<
+        typeof donationFactoryABI,
+        'ProtocolFeeWithdrawn'
     >)
 }
 
@@ -1574,10 +2206,10 @@ export function useDonationPoolManagerRole<
 }
 
 /**
- * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignInfo"`.
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"OPERATOR_ROLE"`.
  */
-export function useDonationPoolGetCampaignInfo<
-    TFunctionName extends 'getCampaignInfo',
+export function useDonationPoolOperatorRole<
+    TFunctionName extends 'OPERATOR_ROLE',
     TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
 >(
     config: Omit<
@@ -1591,7 +2223,223 @@ export function useDonationPoolGetCampaignInfo<
 ) {
     return useContractRead({
         abi: donationPoolABI,
-        functionName: 'getCampaignInfo',
+        functionName: 'OPERATOR_ROLE',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignBeneficiary"`.
+ */
+export function useDonationPoolGetCampaignBeneficiary<
+    TFunctionName extends 'getCampaignBeneficiary',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getCampaignBeneficiary',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignDepositBalance"`.
+ */
+export function useDonationPoolGetCampaignDepositBalance<
+    TFunctionName extends 'getCampaignDepositBalance',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getCampaignDepositBalance',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignFee"`.
+ */
+export function useDonationPoolGetCampaignFee<
+    TFunctionName extends 'getCampaignFee',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getCampaignFee',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignManager"`.
+ */
+export function useDonationPoolGetCampaignManager<
+    TFunctionName extends 'getCampaignManager',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getCampaignManager',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getCampaignRewardsBalance"`.
+ */
+export function useDonationPoolGetCampaignRewardsBalance<
+    TFunctionName extends 'getCampaignRewardsBalance',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getCampaignRewardsBalance',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getContributorAddress"`.
+ */
+export function useDonationPoolGetContributorAddress<
+    TFunctionName extends 'getContributorAddress',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getContributorAddress',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getContributorCount"`.
+ */
+export function useDonationPoolGetContributorCount<
+    TFunctionName extends 'getContributorCount',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getContributorCount',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getFactoryAddress"`.
+ */
+export function useDonationPoolGetFactoryAddress<
+    TFunctionName extends 'getFactoryAddress',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getFactoryAddress',
         ...config,
     } as UseContractReadConfig<
         typeof donationPoolABI,
@@ -1619,6 +2467,60 @@ export function useDonationPoolGetRoleAdmin<
     return useContractRead({
         abi: donationPoolABI,
         functionName: 'getRoleAdmin',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getUserContributorsIndex"`.
+ */
+export function useDonationPoolGetUserContributorsIndex<
+    TFunctionName extends 'getUserContributorsIndex',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getUserContributorsIndex',
+        ...config,
+    } as UseContractReadConfig<
+        typeof donationPoolABI,
+        TFunctionName,
+        TSelectData
+    >)
+}
+
+/**
+ * Wraps __{@link useContractRead}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"getUserDepositBalance"`.
+ */
+export function useDonationPoolGetUserDepositBalance<
+    TFunctionName extends 'getUserDepositBalance',
+    TSelectData = ReadContractResult<typeof donationPoolABI, TFunctionName>,
+>(
+    config: Omit<
+        UseContractReadConfig<
+            typeof donationPoolABI,
+            TFunctionName,
+            TSelectData
+        >,
+        'abi' | 'functionName'
+    > = {} as any,
+) {
+    return useContractRead({
+        abi: donationPoolABI,
+        functionName: 'getUserDepositBalance',
         ...config,
     } as UseContractReadConfig<
         typeof donationPoolABI,
@@ -1743,37 +2645,6 @@ export function useDonationPoolDepositEth<
 }
 
 /**
- * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"depositStEth"`.
- */
-export function useDonationPoolDepositStEth<
-    TMode extends WriteContractMode = undefined,
->(
-    config: TMode extends 'prepared'
-        ? UseContractWriteConfig<
-              PrepareWriteContractResult<
-                  typeof donationPoolABI,
-                  'depositStEth'
-              >['request']['abi'],
-              'depositStEth',
-              TMode
-          > & { functionName?: 'depositStEth' }
-        : UseContractWriteConfig<
-              typeof donationPoolABI,
-              'depositStEth',
-              TMode
-          > & {
-              abi?: never
-              functionName?: 'depositStEth'
-          } = {} as any,
-) {
-    return useContractWrite<typeof donationPoolABI, 'depositStEth', TMode>({
-        abi: donationPoolABI,
-        functionName: 'depositStEth',
-        ...config,
-    } as any)
-}
-
-/**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"depositStEthWithPermit"`.
  */
 export function useDonationPoolDepositStEthWithPermit<
@@ -1804,37 +2675,6 @@ export function useDonationPoolDepositStEthWithPermit<
     >({
         abi: donationPoolABI,
         functionName: 'depositStEthWithPermit',
-        ...config,
-    } as any)
-}
-
-/**
- * Wraps __{@link useContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"endCampaign"`.
- */
-export function useDonationPoolEndCampaign<
-    TMode extends WriteContractMode = undefined,
->(
-    config: TMode extends 'prepared'
-        ? UseContractWriteConfig<
-              PrepareWriteContractResult<
-                  typeof donationPoolABI,
-                  'endCampaign'
-              >['request']['abi'],
-              'endCampaign',
-              TMode
-          > & { functionName?: 'endCampaign' }
-        : UseContractWriteConfig<
-              typeof donationPoolABI,
-              'endCampaign',
-              TMode
-          > & {
-              abi?: never
-              functionName?: 'endCampaign'
-          } = {} as any,
-) {
-    return useContractWrite<typeof donationPoolABI, 'endCampaign', TMode>({
-        abi: donationPoolABI,
-        functionName: 'endCampaign',
         ...config,
     } as any)
 }
@@ -2022,22 +2862,6 @@ export function usePrepareDonationPoolDepositEth(
 }
 
 /**
- * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"depositStEth"`.
- */
-export function usePrepareDonationPoolDepositStEth(
-    config: Omit<
-        UsePrepareContractWriteConfig<typeof donationPoolABI, 'depositStEth'>,
-        'abi' | 'functionName'
-    > = {} as any,
-) {
-    return usePrepareContractWrite({
-        abi: donationPoolABI,
-        functionName: 'depositStEth',
-        ...config,
-    } as UsePrepareContractWriteConfig<typeof donationPoolABI, 'depositStEth'>)
-}
-
-/**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"depositStEthWithPermit"`.
  */
 export function usePrepareDonationPoolDepositStEthWithPermit(
@@ -2057,22 +2881,6 @@ export function usePrepareDonationPoolDepositStEthWithPermit(
         typeof donationPoolABI,
         'depositStEthWithPermit'
     >)
-}
-
-/**
- * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link donationPoolABI}__ and `functionName` set to `"endCampaign"`.
- */
-export function usePrepareDonationPoolEndCampaign(
-    config: Omit<
-        UsePrepareContractWriteConfig<typeof donationPoolABI, 'endCampaign'>,
-        'abi' | 'functionName'
-    > = {} as any,
-) {
-    return usePrepareContractWrite({
-        abi: donationPoolABI,
-        functionName: 'endCampaign',
-        ...config,
-    } as UsePrepareContractWriteConfig<typeof donationPoolABI, 'endCampaign'>)
 }
 
 /**
@@ -2990,7 +3798,7 @@ export function useIerc20PermitTransferEvent(
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolRead<
     TFunctionName extends string,
@@ -3015,7 +3823,7 @@ export function useRafflePoolRead<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"checkUpkeep"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolCheckUpkeep<
     TFunctionName extends 'checkUpkeep',
@@ -3041,7 +3849,7 @@ export function useRafflePoolCheckUpkeep<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getActiveDepositors"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetActiveDepositors<
     TFunctionName extends 'getActiveDepositors',
@@ -3067,7 +3875,7 @@ export function useRafflePoolGetActiveDepositors<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getActiveDepositorsCount"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetActiveDepositorsCount<
     TFunctionName extends 'getActiveDepositorsCount',
@@ -3093,7 +3901,7 @@ export function useRafflePoolGetActiveDepositorsCount<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getInterval"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetInterval<
     TFunctionName extends 'getInterval',
@@ -3119,7 +3927,7 @@ export function useRafflePoolGetInterval<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getLastTimestamp"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetLastTimestamp<
     TFunctionName extends 'getLastTimestamp',
@@ -3145,7 +3953,7 @@ export function useRafflePoolGetLastTimestamp<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getLastTotalBalanceLog"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetLastTotalBalanceLog<
     TFunctionName extends 'getLastTotalBalanceLog',
@@ -3171,7 +3979,7 @@ export function useRafflePoolGetLastTotalBalanceLog<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getLastUserBalanceLog"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetLastUserBalanceLog<
     TFunctionName extends 'getLastUserBalanceLog',
@@ -3197,7 +4005,7 @@ export function useRafflePoolGetLastUserBalanceLog<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getPlatformFee"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetPlatformFee<
     TFunctionName extends 'getPlatformFee',
@@ -3223,7 +4031,7 @@ export function useRafflePoolGetPlatformFee<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getPlatformFeeBalance"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetPlatformFeeBalance<
     TFunctionName extends 'getPlatformFeeBalance',
@@ -3249,7 +4057,7 @@ export function useRafflePoolGetPlatformFeeBalance<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getRaffleState"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetRaffleState<
     TFunctionName extends 'getRaffleState',
@@ -3275,7 +4083,7 @@ export function useRafflePoolGetRaffleState<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getRecentWinner"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetRecentWinner<
     TFunctionName extends 'getRecentWinner',
@@ -3301,7 +4109,7 @@ export function useRafflePoolGetRecentWinner<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getStakingRewardsTotal"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetStakingRewardsTotal<
     TFunctionName extends 'getStakingRewardsTotal',
@@ -3327,7 +4135,7 @@ export function useRafflePoolGetStakingRewardsTotal<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getTotalBalance"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetTotalBalance<
     TFunctionName extends 'getTotalBalance',
@@ -3353,7 +4161,7 @@ export function useRafflePoolGetTotalBalance<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getTotalBalanceLog"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetTotalBalanceLog<
     TFunctionName extends 'getTotalBalanceLog',
@@ -3379,7 +4187,7 @@ export function useRafflePoolGetTotalBalanceLog<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getTotalUserDeposits"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetTotalUserDeposits<
     TFunctionName extends 'getTotalUserDeposits',
@@ -3405,7 +4213,7 @@ export function useRafflePoolGetTotalUserDeposits<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getTwab"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetTwab<
     TFunctionName extends 'getTwab',
@@ -3431,7 +4239,7 @@ export function useRafflePoolGetTwab<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getUserBalanceLog"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetUserBalanceLog<
     TFunctionName extends 'getUserBalanceLog',
@@ -3457,7 +4265,7 @@ export function useRafflePoolGetUserBalanceLog<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"getUserDeposit"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolGetUserDeposit<
     TFunctionName extends 'getUserDeposit',
@@ -3483,7 +4291,7 @@ export function useRafflePoolGetUserDeposit<
 /**
  * Wraps __{@link useContractRead}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"owner"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolOwner<
     TFunctionName extends 'owner',
@@ -3509,7 +4317,7 @@ export function useRafflePoolOwner<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolWrite<
     TFunctionName extends string,
@@ -3541,7 +4349,7 @@ export function useRafflePoolWrite<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"adjustPlatformFee"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolAdjustPlatformFee<
     TMode extends WriteContractMode = undefined,
@@ -3582,7 +4390,7 @@ export function useRafflePoolAdjustPlatformFee<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolDepositEth<
     TMode extends WriteContractMode = undefined,
@@ -3619,7 +4427,7 @@ export function useRafflePoolDepositEth<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositStEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolDepositStEth<
     TMode extends WriteContractMode = undefined,
@@ -3660,7 +4468,7 @@ export function useRafflePoolDepositStEth<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositStEthWithPermit"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolDepositStEthWithPermit<
     TMode extends WriteContractMode = undefined,
@@ -3705,7 +4513,7 @@ export function useRafflePoolDepositStEthWithPermit<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"performUpkeep"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolPerformUpkeep<
     TMode extends WriteContractMode = undefined,
@@ -3746,7 +4554,7 @@ export function useRafflePoolPerformUpkeep<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"rawFulfillRandomWords"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolRawFulfillRandomWords<
     TMode extends WriteContractMode = undefined,
@@ -3791,7 +4599,7 @@ export function useRafflePoolRawFulfillRandomWords<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"renounceOwnership"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolRenounceOwnership<
     TMode extends WriteContractMode = undefined,
@@ -3832,7 +4640,7 @@ export function useRafflePoolRenounceOwnership<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"transferOwnership"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolTransferOwnership<
     TMode extends WriteContractMode = undefined,
@@ -3873,7 +4681,7 @@ export function useRafflePoolTransferOwnership<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"withdrawPlatformFee"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolWithdrawPlatformFee<
     TMode extends WriteContractMode = undefined,
@@ -3916,7 +4724,7 @@ export function useRafflePoolWithdrawPlatformFee<
 /**
  * Wraps __{@link useContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"withdrawStEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolWithdrawStEth<
     TMode extends WriteContractMode = undefined,
@@ -3957,7 +4765,7 @@ export function useRafflePoolWithdrawStEth<
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolWrite<TFunctionName extends string>(
     config: Omit<
@@ -3975,7 +4783,7 @@ export function usePrepareRafflePoolWrite<TFunctionName extends string>(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"adjustPlatformFee"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolAdjustPlatformFee(
     config: Omit<
@@ -4000,7 +4808,7 @@ export function usePrepareRafflePoolAdjustPlatformFee(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolDepositEth(
     config: Omit<
@@ -4019,7 +4827,7 @@ export function usePrepareRafflePoolDepositEth(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositStEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolDepositStEth(
     config: Omit<
@@ -4038,7 +4846,7 @@ export function usePrepareRafflePoolDepositStEth(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"depositStEthWithPermit"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolDepositStEthWithPermit(
     config: Omit<
@@ -4063,7 +4871,7 @@ export function usePrepareRafflePoolDepositStEthWithPermit(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"performUpkeep"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolPerformUpkeep(
     config: Omit<
@@ -4082,7 +4890,7 @@ export function usePrepareRafflePoolPerformUpkeep(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"rawFulfillRandomWords"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolRawFulfillRandomWords(
     config: Omit<
@@ -4107,7 +4915,7 @@ export function usePrepareRafflePoolRawFulfillRandomWords(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"renounceOwnership"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolRenounceOwnership(
     config: Omit<
@@ -4132,7 +4940,7 @@ export function usePrepareRafflePoolRenounceOwnership(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"transferOwnership"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolTransferOwnership(
     config: Omit<
@@ -4157,7 +4965,7 @@ export function usePrepareRafflePoolTransferOwnership(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"withdrawPlatformFee"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolWithdrawPlatformFee(
     config: Omit<
@@ -4182,7 +4990,7 @@ export function usePrepareRafflePoolWithdrawPlatformFee(
 /**
  * Wraps __{@link usePrepareContractWrite}__ with `abi` set to __{@link rafflePoolABI}__ and `functionName` set to `"withdrawStEth"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function usePrepareRafflePoolWithdrawStEth(
     config: Omit<
@@ -4201,7 +5009,7 @@ export function usePrepareRafflePoolWithdrawStEth(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolEvent<TEventName extends string>(
     config: Omit<
@@ -4219,7 +5027,7 @@ export function useRafflePoolEvent<TEventName extends string>(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"DepositSuccessful"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolDepositSuccessfulEvent(
     config: Omit<
@@ -4238,7 +5046,7 @@ export function useRafflePoolDepositSuccessfulEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"MintAndDepositSuccessful"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolMintAndDepositSuccessfulEvent(
     config: Omit<
@@ -4263,7 +5071,7 @@ export function useRafflePoolMintAndDepositSuccessfulEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"OwnershipTransferred"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolOwnershipTransferredEvent(
     config: Omit<
@@ -4282,7 +5090,7 @@ export function useRafflePoolOwnershipTransferredEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"PickedWinner"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolPickedWinnerEvent(
     config: Omit<
@@ -4301,7 +5109,7 @@ export function useRafflePoolPickedWinnerEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"ProtocolFeeAdjusted"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolProtocolFeeAdjustedEvent(
     config: Omit<
@@ -4320,7 +5128,7 @@ export function useRafflePoolProtocolFeeAdjustedEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"ProtocolFeeWithdrawn"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolProtocolFeeWithdrawnEvent(
     config: Omit<
@@ -4339,7 +5147,7 @@ export function useRafflePoolProtocolFeeWithdrawnEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"RandomWord"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolRandomWordEvent(
     config: Omit<
@@ -4358,7 +5166,7 @@ export function useRafflePoolRandomWordEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"RequestedRaffleWinner"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolRequestedRaffleWinnerEvent(
     config: Omit<
@@ -4377,7 +5185,7 @@ export function useRafflePoolRequestedRaffleWinnerEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"ScaledRandomNumber"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolScaledRandomNumberEvent(
     config: Omit<
@@ -4396,7 +5204,7 @@ export function useRafflePoolScaledRandomNumberEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"StakingRewardsUpdated"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolStakingRewardsUpdatedEvent(
     config: Omit<
@@ -4415,7 +5223,7 @@ export function useRafflePoolStakingRewardsUpdatedEvent(
 /**
  * Wraps __{@link useContractEvent}__ with `abi` set to __{@link rafflePoolABI}__ and `eventName` set to `"WithdrawSuccessful"`.
  *
- * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x95f42a7e845d6dd5360B54eB3e33BA01B6eAd062)
+ * [__View Contract on Goerli Etherscan__](https://goerli.etherscan.io/address/0x82276EA98dF755d4AF1324142A236Fe1732E111d)
  */
 export function useRafflePoolWithdrawSuccessfulEvent(
     config: Omit<

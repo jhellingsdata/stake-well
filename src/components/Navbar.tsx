@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import Link from 'next/link';
 import Image from 'next/image';
 import CustomButton from './CustomButton';
@@ -32,7 +32,7 @@ const Navbar = () => {
         //         <Connect />
         //     </nav>
         // </header>
-        <header className='absolute top-0 w-screen h-16 m-0 mb-[45px] flex flex-row px-12 bg-gray-700 text-white shadow-lg'>
+        <header className="absolute top-0 w-screen h-16 m-0 mb-[45px] flex flex-row px-12 bg-gray-700 text-white shadow-lg">
             <nav className="w-full max-w-[1440px] mx-auto flex justify-between items-center">
                 <div className="flex">
                     <Link href="/" className="navbar-items font-bold">
@@ -44,13 +44,9 @@ const Navbar = () => {
                     <Link href="/donate" className="navbar-items">
                         Donate
                     </Link>
-                    <Link href="/docs" className="navbar-items mx-4">
-                        Docs
-                    </Link>
                     <Link href="https://github.com/jhellingsdata/dapp-main">
                         <NavbarIcon icon={<BsGithub size="28" />} />
                     </Link>
-
                 </div>
 
                 <div className="flex mx-4 items-center">
@@ -59,14 +55,11 @@ const Navbar = () => {
                 </div>
             </nav>
         </header>
-    )
-}
+    );
+};
 
 const NavbarIcon: React.FC<NavbarIconProps> = ({ icon }) => (
-    <div className="navbar-icon">
-        {icon}
-    </div>
-)
+    <div className="navbar-icon">{icon}</div>
+);
 
-
-export default Navbar
+export default Navbar;

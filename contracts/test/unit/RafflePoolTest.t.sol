@@ -14,10 +14,8 @@ import {RafflePool} from "../../src/RafflePool.sol";
 import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 import {StEthMock} from "../mocks/StEthToken.sol";
 import {SigUtils} from "../mocks/utils/SigUtils.sol";
-import {InvariantTest} from "../../lib/forge-std/src/InvariantTest.sol";
-import {RafflePoolHandler} from "../invariants/RafflePoolHandler.t.sol";
 
-contract RafflePoolTest is InvariantTest, StdCheats, Test {
+contract RafflePoolTest is StdCheats, Test {
     ///////////////////
     // Events
     ///////////////////
@@ -31,7 +29,6 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
     RafflePool rafflePool;
     HelperConfig helperConfig;
     SigUtils sigUtils;
-    RafflePoolHandler handler;
 
     StEthMock public StEth;
     address steth;
@@ -39,17 +36,13 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
     address vrfCoordinatorV2;
     bytes32 gasLane;
     uint64 subscriptionId;
-    uint32 callbackGasLimit;
-    uint32 numWords;
-    address link;
-    // uint256 deployerKey;
+    uint256 deployerKey;
     uint256 ownerPrivateKey;
     address public PLAYER;
     address public USER1;
     address public USER2;
     address public USER3;
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
-    // stETHMock public constant STETH_BALANCE = 1 ether;
 
     function setUp() external {
         DeployRafflePool deployer = new DeployRafflePool();
@@ -69,16 +62,13 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
             vrfCoordinatorV2,
             gasLane,
             subscriptionId,
-            callbackGasLimit,
-            numWords,
+            , // callbackGasLimit
+            , // numWords
             , // link
-                // deployerKey // deployerPrivateKey
+            deployerKey // deployerKey // deployerPrivateKey
         ) = helperConfig.activeNetworkConfig(); // now these are all getting saved as state vars so can use them in tests below
         StEth = StEthMock(payable(steth));
         sigUtils = new SigUtils(StEth.DOMAIN_SEPARATOR());
-        handler = new RafflePoolHandler(rafflePool, StEth);
-        deal(address(handler), 1000 * 1e18);
-        targetContract(address(handler));
     }
 
     /////////////////////////
@@ -762,14 +752,14 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
     //////////////////////////
     // Platform Fee         //
     //////////////////////////
-    // function testOwnerCanSetFee() public {
-    //     // prank as the owner of the smart contract and set the platform fee
-    //     // uint256 feeBefore = rafflePool.getPlatformFee();
-    //     address OWNER = vm.addr(deployerKey);
-    //     vm.prank(OWNER);
-    //     rafflePool.adjustPlatformFee(100);
-    //     assertEq(rafflePool.getPlatformFee(), 100);
-    // }
+    function testOwnerCanSetFee() public {
+        // prank as the owner of the smart contract and set the platform fee
+        // uint256 feeBefore = rafflePool.getPlatformFee();
+        address OWNER = vm.addr(deployerKey);
+        vm.prank(OWNER);
+        rafflePool.adjustPlatformFee(100);
+        assertEq(rafflePool.getPlatformFee(), 100);
+    }
 
     //////////////////////////
     // fulfillRandomWords
@@ -965,7 +955,53 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
             uint256(requestId), address(rafflePool), wordsArray
         );
     }
-    // Could probably utilise a while loop to improve randomness
+
+    function testOwnerCanWithdrawFee(uint256 _randomWord) public {
+        // set fee, then perform raffle, then withdraw fee balance
+        address OWNER = vm.addr(deployerKey);
+        vm.prank(OWNER);
+        rafflePool.adjustPlatformFee(100);
+
+        // Deposit multiple times across multiple users
+        _depositEthToRafflePool(PLAYER, 1 ether);
+        _depositEthToRafflePool(USER1, 2 ether);
+        _depositEthToRafflePool(USER2, 3 ether);
+
+        // Move through time & rebase so interval has passed and check upkeep returns true
+        for (uint256 i = 0; i < 7; i++) {
+            vm.warp(block.timestamp + 1 days);
+            // _depositEthToRafflePool(PLAYER, 1 ether); // deposit 1 steth each day
+            StEth.rebase();
+        }
+        vm.warp(block.timestamp + 1);
+
+        // (bool upkeepNeeded,) = rafflePool.checkUpkeep("");
+        // assertEq(upkeepNeeded, true);
+
+        // Perform upkeep and listen for request id, this is passed to VRFCoordinator to request random number
+        vm.recordLogs();
+        rafflePool.performUpkeep("");
+        Vm.Log[] memory requestLogs = vm.getRecordedLogs();
+        bytes32 requestId = requestLogs[1].topics[1];
+        uint256[] memory wordsArray = new uint256[](1);
+        wordsArray[0] = _randomWord;
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWordsWithOverride(
+            uint256(requestId), address(rafflePool), wordsArray
+        );
+
+        assertEq(rafflePool.getLastTimestamp(), block.timestamp, "Last timestamp not updated");
+        assertGt(rafflePool.getPlatformFeeBalance(), 0);
+
+        vm.expectRevert(RafflePool.RafflePool__InsufficientFeeBalance.selector);
+        rafflePool.withdrawPlatformFee();
+
+        vm.prank(OWNER);
+        rafflePool.withdrawPlatformFee();
+        assertEq(rafflePool.getPlatformFeeBalance(), 0);
+
+        // // Check that winner is picked and announced
+        assert(rafflePool.getRaffleState() == RafflePool.RaffleState.OPEN);
+    }
 
     //////////////////////////
     // Raffle Scaling Test  //
@@ -1049,43 +1085,4 @@ contract RafflePoolTest is InvariantTest, StdCheats, Test {
     //////////////////////////
     // Active Users Array   //
     //////////////////////////
-
-    //////////////////////////
-    // Invariants           //
-    //////////////////////////
-    // Function to check for duplicates in activeUsers
-    function _hasDuplicates() internal returns (bool) {
-        string memory path = "tests/array_activeUsers.txt";
-        address[] memory s_activeUsers = rafflePool.getActiveDepositors();
-        vm.writeLine(path, vm.toString(s_activeUsers.length));
-        for (uint256 i = 0; i < s_activeUsers.length; i++) {
-            for (uint256 j = i + 1; j < s_activeUsers.length; j++) {
-                if (s_activeUsers[i] == s_activeUsers[j]) {
-                    return true; // Found a duplicate
-                }
-            }
-        }
-        return false;
-    }
-
-    function invariant_testActiveUsersNeverContainsDuplicates() public {
-        assertEq(_hasDuplicates(), false, "Active users array contains duplicates");
-    }
-
-    // function _sumOfUserTwabs() internal returns (bool) {
-    //     // get user number
-    //     uint256 userCount = rafflePool.getActiveDepositorsCount();
-    //     // calculate user twab
-    //     for (uint256 i = 0; i < userCount; i++) {
-
-    //         uint256 userTwab = rafflePool.getTwab(user, 0, block.timestamp);
-    //         // add to total twab
-    //         totalTwab += userTwab;
-    //     }
-    // }
-
-    // function invariant_testTotalTwabIsAlwaysSumOfUserTwabs() public {
-    //     uint256 totalTwab = rafflePool.getTwab(address(0), 0, block.timestamp);
-    //     assertEq(_hasDuplicates(), false, "Active users array contains duplicates");
-    // }
 }

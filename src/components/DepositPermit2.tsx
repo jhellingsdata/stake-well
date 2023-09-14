@@ -5,63 +5,17 @@ import {
     useContractRead,
     useSignTypedData,
 } from 'wagmi';
-import { parseEther } from 'viem';
+import { hexToSignature, parseEther } from 'viem';
 import { ADDRESS } from '../address';
-import { ierc20PermitABI, rafflePoolAddress } from '../generated';
+import {
+    ierc20PermitABI,
+    rafflePoolAddress,
+    useRafflePoolDepositStEthWithPermit,
+    usePrepareRafflePoolDepositStEthWithPermit,
+} from '../generated';
+import { useDebounce } from '../hooks/useDebounce';
 import CustomButton from './CustomButton';
 import { ValidateInput } from './ValidateInput';
-
-function generateEIP712Message(
-    address: Address,
-    value: string,
-    nonce: bigint,
-    deadline: number,
-) {
-    // Define the EIP-712 type definitions.
-    const types = {
-        EIP712Domain: [
-            { name: 'name', type: 'string' },
-            { name: 'version', type: 'string' },
-            { name: 'chainId', type: 'uint256' },
-            { name: 'verifyingContract', type: 'address' },
-        ],
-        Permit: [
-            { name: 'owner', type: 'address' },
-            { name: 'spender', type: 'address' },
-            { name: 'value', type: 'uint256' },
-            { name: 'nonce', type: 'uint256' },
-            { name: 'deadline', type: 'uint256' },
-        ],
-    } as const;
-
-    // Define the primary type which is the main type we're signing.
-    const primaryType = 'Permit';
-
-    // Define the EIP-712 domain data.
-    const domain = {
-        name: 'Liquid staked Ether 2.0',
-        version: '2',
-        chainId: 5,
-        verifyingContract: ADDRESS[5].STETH as Address,
-    } as const;
-
-    // Define the message to sign.
-    const message = {
-        owner: address as Address,
-        spender: rafflePoolAddress[5] as Address,
-        value: parseEther(value),
-        nonce: nonce,
-        deadline: deadline,
-    } as const;
-
-    // Return the structured data.
-    return {
-        types,
-        domain,
-        primaryType,
-        message,
-    };
-}
 
 const DepositPermit = () => {
     const { address } = useAccount();
@@ -69,12 +23,9 @@ const DepositPermit = () => {
     const [isValid, setIsValid] = useState(false);
     const [signature, setSignature] = useState<string | null>(null);
     const [interactionStatus, setInteractionStatus] = useState('pending');
-    const [amount, setAmount] = useState<string>('');
+    const debouncedValue = useDebounce(value);
     // const [nonce, setNonce] = useState<BigInt | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [transactionState, setTransactionState] = useState<
-        'idle' | 'pending' | 'success' | 'failed'
-    >('idle');
     const [deadline, setDeadline] = useState(BigInt(0));
 
     // Fetch user's nonce
@@ -92,19 +43,22 @@ const DepositPermit = () => {
         setValue(newValue);
         setIsValid(newIsValid);
     }
-
+    // onSuccess, deconstruct signature data into v, r, s
+    let v: bigint | undefined;
+    let r: string | undefined;
+    let s: string | undefined;
     const {
         data: sig,
         error: sigError,
-        isLoading,
-        isSuccess, // This is true when the signature is generated
+        isLoading: isSigLoading,
+        isSuccess: isSigSuccess, // This is true when the signature is generated
         signTypedData,
     } = useSignTypedData({
         domain: {
             name: 'Liquid staked Ether 2.0',
             version: '2',
             chainId: 5,
-            verifyingContract: ADDRESS[5].STETH as Address,
+            verifyingContract: ADDRESS[5].STETH,
         },
         message: {
             owner: address as Address,
@@ -133,18 +87,59 @@ const DepositPermit = () => {
             console.log('Success: ', data);
             setSignature(data);
             setInteractionStatus('signed');
+            ({ v, r, s } = hexToSignature(data));
         },
     });
 
+    ////////////////// Raffle Pool Deposit ///////////////////////
+
+    const { config } = usePrepareRafflePoolDepositStEthWithPermit({
+        // value: debouncedValue ? parseEther(debouncedValue) : BigInt(0),
+        args: [
+            debouncedValue ? parseEther(debouncedValue) : BigInt(0),
+            deadline,
+            v,
+            r,
+            s,
+        ],
+        enabled: Boolean(signature),
+    });
+
+    const {
+        write,
+        data: depositData,
+        error: depositError,
+        isError: isDepositError,
+        isLoading: isDepositLoading,
+        isSuccess: isDepositSuccess,
+    } = useRafflePoolDepositStEthWithPermit(config);
+
+    /////////////////////////////////////////////////////
+
     // Callback to handle deposit button click
-    const handleDeposit = async () => {
+    const handleSign = async () => {
         const deadline = Math.floor(Date.now() / 1000) + 3600; // Valid for one hour
         setDeadline(BigInt(deadline));
         signTypedData();
     };
+    const handleDeposit = async () => {
+        let v, r, s;
+        if (sig) {
+            ({ v, r, s } = hexToSignature(sig));
+            console.log('v: ', v);
+            console.log('r: ', r);
+            console.log('s: ', s);
+        }
+        write?.();
+        // if deposit is successful, reset the form and reset the signature
+        if (isDepositSuccess) {
+            setValue('');
+            setSignature(null);
+        }
+    };
 
-    // ToDo: now permit sign is working correctly, need to implement deposit function
-    // So after user signs, we change the button to "Deposit" and call the deposit function
+    let buttonStyles =
+        'bg-gradient-to-tl from-violet-500 to-violet-600 text-white tracking-wide';
 
     return (
         <>
@@ -160,23 +155,24 @@ const DepositPermit = () => {
                 >
                     {buttonText}
                 </button> */}
-                {/* Render `Sign` button if user hasn't yet signed permit message, so idle or pending */}
-                {interactionStatus !== 'signed' && (
-                    <CustomButton
-                        title={'Deposit'}
-                        containerStyles={`w-full rounded-xl mt-2`}
-                        handleClick={(e) => {
-                            e.preventDefault(); // stops page refresh
-                            handleDeposit();
-                        }}
-                        disabled={!isValid}
-                    />
-                )}
+                {/* Render `Sign` button if user hasn't yet signed permit message or if user has successfully deposited. */}
+                {isDepositSuccess ||
+                    (!isSigSuccess && (
+                        <CustomButton
+                            title={'Deposit'}
+                            containerStyles={`w-full rounded-xl mt-2 ${buttonStyles}`}
+                            handleClick={(e) => {
+                                e.preventDefault(); // stops page refresh
+                                handleSign();
+                            }}
+                            disabled={!isValid}
+                        />
+                    ))}
                 {/* Render deposit button if user has signed permit message */}
-                {interactionStatus === 'signed' && (
+                {isSigSuccess && (
                     <CustomButton
                         title={'Deposit'}
-                        containerStyles={`w-full rounded-xl mt-2`}
+                        containerStyles={`w-full rounded-xl mt-2 ${buttonStyles}`}
                         handleClick={(e) => {
                             e.preventDefault(); // stops page refresh
                             handleDeposit();

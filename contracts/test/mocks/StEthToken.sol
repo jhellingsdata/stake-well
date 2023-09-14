@@ -261,6 +261,8 @@ contract StEthMock is IERC20Permit {
         setTotalPooledEther(newTotalSupply);
     }
 
+    // create negative rebase function
+
     function burnShares(address _account, uint256 _sharesAmount) public returns (uint256 newTotalShares) {
         return _burnShares(_account, _sharesAmount);
     }

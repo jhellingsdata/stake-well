@@ -126,7 +126,7 @@ function DepositStEthWithPermit({
     // } as const
 
     console.log(message);
-    const message = generateEIP712Message(value, nonce, types, deadline);
+    const message = GenerateEIP712Message(value, nonce, types, deadline);
     const {
         data: sig,
         error: sigError,

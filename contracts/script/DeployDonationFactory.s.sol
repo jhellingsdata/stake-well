@@ -9,7 +9,7 @@ import {HelperConfigDonation} from "./HelperConfigDonation.s.sol";
 contract DeployDonationFactory is Script {
     function run() external returns (DonationFactory, HelperConfigDonation) {
         HelperConfigDonation helperConfig = new HelperConfigDonation();
-        (address steth, uint256 deployerPrivateKey) = helperConfig.activeNetworkConfig();
+        (address steth, uint256 platformFee, uint256 deployerPrivateKey) = helperConfig.activeNetworkConfig();
 
         // if we are on a local Anvil chain, set genesis timestamp to current time: 1693409871
         if (block.chainid == 31337) {
@@ -17,7 +17,8 @@ contract DeployDonationFactory is Script {
         }
         vm.startBroadcast(deployerPrivateKey);
         DonationFactory donationFactory = new DonationFactory(
-            steth
+            steth,
+            platformFee
         );
         vm.stopBroadcast();
 

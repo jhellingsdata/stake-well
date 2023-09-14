@@ -1,0 +1,821 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1285pt" height="1411pt" viewBox="0.00 0.00 1285.41 1411">
+<g id="graph0" class="graph" transform="translate(-23.120609710609187,1536.5661402820092) scale(1.006955550056721)" data-name="G">
+
+<polygon fill="#2e3e56" stroke="none" points="-4,4 -4,-1407 1281.41,-1407 1281.41,4 -4,4"/>
+<g id="clust4" class="cluster" data-name="cluster_01">
+
+<polygon fill="#2e3e56" stroke="black" points="57.03,-1266 57.03,-1395 460.71,-1395 460.71,-1266 57.03,-1266" style=""/>
+<text text-anchor="middle" x="258.87" y="-1378.4" font-family="Times,serif" font-size="14.00" style="">Legend</text>
+</g>
+<g id="clust3" class="cluster" data-name="clusterVRFCoordinatorV2Interface">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M332.32,-194C332.32,-194 519.1,-194 519.1,-194 525.1,-194 531.1,-200 531.1,-206 531.1,-206 531.1,-259 531.1,-259 531.1,-265 525.1,-271 519.1,-271 519.1,-271 332.32,-271 332.32,-271 326.32,-271 320.32,-265 320.32,-259 320.32,-259 320.32,-206 320.32,-206 320.32,-200 326.32,-194 332.32,-194" style=""/>
+<text text-anchor="middle" x="425.71" y="-254.4" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">VRFCoordinatorV2Interface</text>
+</g>
+<g id="clust2" class="cluster" data-name="clusterIERC20Permit">
+
+<path fill="#3b4b63" stroke="#e8726d" stroke-dasharray="5,2" d="M709.52,-8C709.52,-8 824.42,-8 824.42,-8 830.42,-8 836.42,-14 836.42,-20 836.42,-20 836.42,-289 836.42,-289 836.42,-295 830.42,-301 824.42,-301 824.42,-301 709.52,-301 709.52,-301 703.52,-301 697.52,-295 697.52,-289 697.52,-289 697.52,-20 697.52,-20 697.52,-14 703.52,-8 709.52,-8" style=""/>
+<text text-anchor="middle" x="766.97" y="-284.4" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">IERC20Permit</text>
+</g>
+<g id="clust1" class="cluster" data-name="clusterRafflePool">
+
+<path fill="#445773" stroke="#445773" d="M20,-309C20,-309 1257.41,-309 1257.41,-309 1263.41,-309 1269.41,-315 1269.41,-321 1269.41,-321 1269.41,-1246 1269.41,-1246 1269.41,-1252 1263.41,-1258 1257.41,-1258 1257.41,-1258 20,-1258 20,-1258 14,-1258 8,-1252 8,-1246 8,-1246 8,-321 8,-321 8,-315 14,-309 20,-309" style=""/>
+<text text-anchor="middle" x="638.7" y="-1241.4" font-family="Times,serif" font-size="14.00" fill="#f0f0f0" style="">RafflePool</text>
+</g>
+<!-- RafflePool.moreThanZero -->
+<g id="node1" class="node" pointer-events="visible" data-name="RafflePool.moreThanZero">
+
+<polygon fill="#edad56" stroke="#1bc6a6" stroke-width="3" points="204.78,-1195.54 204.78,-1210.46 160.99,-1221 99.06,-1221 55.27,-1210.46 55.27,-1195.54 99.06,-1185 160.99,-1185 204.78,-1195.54"/>
+<polygon fill="none" stroke="#1bc6a6" stroke-width="3" points="208.79,-1192.39 208.79,-1213.61 161.47,-1225 98.59,-1225 51.27,-1213.61 51.27,-1192.39 98.59,-1181 161.47,-1181 208.79,-1192.39"/>
+<text text-anchor="middle" x="130.03" y="-1198.8" font-family="Times,serif" font-size="14.00">moreThanZero</text>
+</g><g id="edge1" class="edge" data-name="RafflePool.moreThanZero-&gt;RafflePool.RafflePool__NeedsMoreThanZero" data-comment="RafflePool.moreThanZero">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M210.12,-1204.08C227.68,-1204.32 246.89,-1204.58 266.38,-1204.84"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="266.13,-1208.34 276.18,-1204.98 266.23,-1201.34 266.13,-1208.34"/>
+</g>
+<!-- RafflePool.RafflePool__NeedsMoreThanZero -->
+<g id="node35" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__NeedsMoreThanZero">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-1207" rx="145.81" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-1202.8" font-family="Times,serif" font-size="14.00">RafflePool__NeedsMoreThanZero</text>
+</g>
+<!-- RafflePool.moreThanZero&#45;&gt;RafflePool.RafflePool__NeedsMoreThanZero -->
+
+<!-- RafflePool.&lt;Constructor&gt; -->
+<g id="node2" class="node" pointer-events="visible" data-name="RafflePool.&lt;Constructor&gt;">
+
+<ellipse fill="#ff9797" stroke="#ff9797" stroke-width="3" cx="130.03" cy="-1145" rx="67.55" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-1140.8" font-family="Times,serif" font-size="14.00">&lt;Constructor&gt;</text>
+</g><g id="edge2" class="edge" data-name="RafflePool.&lt;Constructor&gt;-&gt;RafflePool.IERC20Permit" data-comment="RafflePool.&lt;Constructor&gt;">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M190.46,-1135.69C237.1,-1128.39 302.24,-1118.18 351.99,-1110.39"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="352.28,-1113.89 361.62,-1108.88 351.2,-1106.97 352.28,-1113.89"/>
+</g>
+<!-- RafflePool.IERC20Permit -->
+<g id="node36" class="node" pointer-events="visible" data-name="RafflePool.IERC20Permit">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-1099" rx="68.38" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-1094.8" font-family="Times,serif" font-size="14.00">IERC20Permit</text>
+</g>
+<!-- RafflePool.&lt;Constructor&gt;&#45;&gt;RafflePool.IERC20Permit -->
+<g id="edge3" class="edge" data-name="RafflePool.&lt;Constructor&gt;-&gt;RafflePool.VRFCoordinatorV2Interface" data-comment="RafflePool.&lt;Constructor&gt;-&gt;RafflePool.IERC20Permit">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M198.4,-1146.84C225.91,-1147.58 258.75,-1148.48 290.75,-1149.35"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="290.33,-1152.84 300.42,-1149.61 290.52,-1145.84 290.33,-1152.84"/>
+</g>
+<!-- RafflePool.VRFCoordinatorV2Interface -->
+<g id="node37" class="node" pointer-events="visible" data-name="RafflePool.VRFCoordinatorV2Interface">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-1153" rx="122.69" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-1148.8" font-family="Times,serif" font-size="14.00">VRFCoordinatorV2Interface</text>
+</g>
+<!-- RafflePool.&lt;Constructor&gt;&#45;&gt;RafflePool.VRFCoordinatorV2Interface -->
+
+<!-- RafflePool.depositEth -->
+<g id="node3" class="node" pointer-events="visible" data-name="RafflePool.depositEth">
+
+<ellipse fill="#ffbdb9" stroke="brown" stroke-width="3" cx="425.71" cy="-699" rx="52.19" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-694.8" font-family="Times,serif" font-size="14.00">depositEth</text>
+</g><g id="edge5" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool._addUser" data-comment="RafflePool.depositEth">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M479.39,-698.89C509.37,-696.23 545.9,-688.27 571.36,-667 603.16,-640.43 574.92,-606.78 607.36,-581 634.75,-559.24 673.3,-552.3 705.54,-550.9"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="705.52,-554.4 715.43,-550.68 705.36,-547.41 705.52,-554.4"/>
+</g>
+<!-- RafflePool._addUser -->
+<g id="node12" class="node" pointer-events="visible" data-name="RafflePool._addUser">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-554" rx="48.08" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-549.8" font-family="Times,serif" font-size="14.00">_addUser</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool._addUser -->
+<g id="edge12" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool._addBalance" data-comment="RafflePool.depositEth-&gt;RafflePool._addUser">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M477.39,-694.18C506.16,-689.91 542.16,-681.92 571.36,-667 590.43,-657.26 588.07,-644.27 607.36,-635 633.56,-622.42 664.65,-615.61 692.34,-611.95"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="692.68,-615.44 702.2,-610.79 691.86,-608.48 692.68,-615.44"/>
+</g>
+<!-- RafflePool._addBalance -->
+<g id="node13" class="node" pointer-events="visible" data-name="RafflePool._addBalance">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-608" rx="60.81" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-603.8" font-family="Times,serif" font-size="14.00">_addBalance</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool._addBalance -->
+<g id="edge13" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool._updateBalanceLogs" data-comment="RafflePool.depositEth-&gt;RafflePool._addBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M478.61,-701.6C527.56,-704.05 602.33,-707.8 663.33,-710.86"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="662.94,-714.34 673.1,-711.35 663.29,-707.35 662.94,-714.34"/>
+</g>
+<!-- RafflePool._updateBalanceLogs -->
+<g id="node15" class="node" pointer-events="visible" data-name="RafflePool._updateBalanceLogs">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-716" rx="92.03" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-711.8" font-family="Times,serif" font-size="14.00">_updateBalanceLogs</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool._updateBalanceLogs -->
+<g id="edge4" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool._checkRaffleState" data-comment="RafflePool.depositEth-&gt;RafflePool._updateBalanceLogs">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M477.13,-693.5C530.24,-687.71 614.85,-678.48 678.8,-671.51"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="679.14,-674.99 688.7,-670.43 678.38,-668.03 679.14,-674.99"/>
+</g>
+<!-- RafflePool._checkRaffleState -->
+<g id="node20" class="node" pointer-events="visible" data-name="RafflePool._checkRaffleState">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-662" rx="81.64" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-657.8" font-family="Times,serif" font-size="14.00">_checkRaffleState</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool._checkRaffleState -->
+<g id="edge7" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool.address" data-comment="RafflePool.depositEth-&gt;RafflePool._checkRaffleState">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M466.63,-686.45C499.03,-682.15 543.72,-675.72 571.36,-649 617.56,-604.35 560.09,-552.5 607.36,-509 640.04,-478.93 693.3,-475.8 728.97,-482.05"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="727.78,-485.37 738.29,-484.1 729.28,-478.53 727.78,-485.37"/>
+</g>
+<!-- RafflePool.address -->
+<g id="node38" class="node" pointer-events="visible" data-name="RafflePool.address">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-500" rx="40" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-495.8" font-family="Times,serif" font-size="14.00">address</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool.address -->
+
+<!-- RafflePool.depositEth&#45;&gt;RafflePool.address -->
+<g id="edge8" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M479.17,-700.31C509.83,-698.25 547.14,-690.42 571.36,-667 617.56,-622.35 560.09,-570.5 607.36,-527 635.7,-500.92 679.53,-495.1 713.93,-495.28" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.49,-498.77 723.58,-495.54 713.68,-491.78 713.49,-498.77"/>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool.address -->
+<g id="edge9" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool.RafflePool__MintFailed" data-comment="RafflePool.depositEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M476.37,-705.05C504.65,-709.29 540.49,-716.01 571.36,-726 588.2,-731.45 590.49,-737.69 607.36,-743 625.72,-748.78 645.69,-753.4 665.07,-757.07"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="664.25,-760.48 674.72,-758.81 665.5,-753.59 664.25,-760.48"/>
+</g><g id="edge11" class="edge" data-name="RafflePool.depositEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M458.48,-714.33C491.13,-719.11 541.31,-714.05 571.36,-685 617.56,-640.35 560.09,-588.5 607.36,-545 636.8,-517.91 682.93,-512.68 717.87,-510.18" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="717.9,-513.69 727.64,-509.52 717.42,-506.7 717.9,-513.69"/>
+</g>
+<!-- RafflePool.RafflePool__MintFailed -->
+<g id="node39" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__MintFailed">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-770" rx="105.4" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-765.8" font-family="Times,serif" font-size="14.00">RafflePool__MintFailed</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;RafflePool.RafflePool__MintFailed -->
+<g id="edge6" class="edge" data-name="RafflePool.depositEth-&gt;IERC20Permit.balanceOf" data-comment="RafflePool.depositEth-&gt;RafflePool.RafflePool__MintFailed">
+
+<path fill="none" stroke="white" stroke-width="2" d="M464.52,-685.67C498.6,-675.72 546.99,-658.63 571.36,-623 643.15,-518.07 522.33,-146.52 607.36,-52 633.65,-22.78 678.96,-17.52 714.44,-20.21"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="713.69,-23.65 724,-21.22 714.42,-16.69 713.69,-23.65"/>
+</g>
+<!-- IERC20Permit.balanceOf -->
+<g id="node48" class="node" pointer-events="visible" data-name="IERC20Permit.balanceOf">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-34" rx="50.92" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-29.8" font-family="Times,serif" font-size="14.00">balanceOf</text>
+</g>
+<!-- RafflePool.depositEth&#45;&gt;IERC20Permit.balanceOf -->
+
+<!-- RafflePool.depositEth&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge18" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool._addUser" data-comment="RafflePool.depositEth-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M480.47,-506.03C542.78,-516.5 645.06,-533.69 708.8,-544.39"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="707.97,-547.8 718.41,-546.01 709.13,-540.9 707.97,-547.8"/>
+</g><g id="edge10" class="edge" data-name="RafflePool.depositEth-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M478.97,-696.59C511.19,-688.78 550.27,-671.84 571.36,-641 643.15,-536.07 522.33,-164.52 607.36,-70 630.62,-44.15 668.76,-37.06 701.81,-35.55" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="701.72,-39.06 711.63,-35.3 701.54,-32.06 701.72,-39.06"/>
+</g>
+<!-- RafflePool.depositStEth -->
+<g id="node4" class="node" pointer-events="visible" data-name="RafflePool.depositStEth">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-497" rx="60.29" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-492.8" font-family="Times,serif" font-size="14.00">depositStEth</text>
+</g><g id="edge26" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool._addBalance" data-comment="RafflePool.depositStEth">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M487.17,-497.47C514.84,-500.26 546.84,-507.36 571.36,-524 596.16,-540.82 582.43,-564.38 607.36,-581 632.05,-597.46 663.56,-604.91 691.98,-607.99"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="691.5,-611.46 701.77,-608.85 692.11,-604.49 691.5,-611.46"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool._addUser -->
+<g id="edge27" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool._updateBalanceLogs" data-comment="RafflePool.depositStEth-&gt;RafflePool._addUser">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M486.45,-493.65C515.65,-495.27 549.18,-502.48 571.36,-524 625.24,-576.26 553.08,-637.17 607.36,-689 622.25,-703.22 641.72,-711.49 661.88,-716.05"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="661.05,-719.46 671.52,-717.88 662.35,-712.58 661.05,-719.46"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool._addBalance -->
+<g id="edge17" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool._checkRaffleState" data-comment="RafflePool.depositStEth-&gt;RafflePool._addBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M487.03,-494.68C515.66,-496.69 548.53,-503.93 571.36,-524 610.33,-558.23 568.13,-601.08 607.36,-635 625.19,-650.41 648.5,-658.6 671.73,-662.65"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="671.21,-666.11 681.6,-664.06 672.2,-659.18 671.21,-666.11"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool._updateBalanceLogs -->
+<g id="edge15" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.address" data-comment="RafflePool.depositStEth-&gt;RafflePool._updateBalanceLogs">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M469.68,-483.36C534.73,-475.64 657.54,-476.71 722.74,-485.57"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="721.96,-488.99 732.37,-487.05 723.02,-482.07 721.96,-488.99"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool._checkRaffleState -->
+
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.address -->
+
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.address -->
+<g id="edge20" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M485.42,-492.26C549.91,-490.77 652.49,-491.75 714.12,-494.52" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.8,-498.01 723.97,-495.01 714.15,-491.02 713.8,-498.01"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.address -->
+<g id="edge22" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M484.65,-502.74C549,-505.4 651.97,-506.25 713.87,-504.57" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.89,-508.07 723.77,-504.26 713.67,-501.07 713.89,-508.07"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.address -->
+<g id="edge16" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.RafflePool__InsufficientAllowance" data-comment="RafflePool.depositStEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M487.15,-495.92C514.66,-492.98 546.53,-485.93 571.36,-470 594.72,-455.02 583.89,-433.79 607.36,-419 614.67,-414.4 622.52,-410.51 630.68,-407.24"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="631.76,-410.57 639.98,-403.89 629.39,-403.98 631.76,-410.57"/>
+</g><g id="edge25" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M467.97,-511.16C532.24,-520.2 655.7,-521.42 721.74,-513.79" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="722.08,-517.27 731.53,-512.48 721.16,-510.33 722.08,-517.27"/>
+</g>
+<!-- RafflePool.RafflePool__InsufficientAllowance -->
+<g id="node40" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__InsufficientAllowance">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-392" rx="148.75" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-387.8" font-family="Times,serif" font-size="14.00">RafflePool__InsufficientAllowance</text>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.RafflePool__InsufficientAllowance -->
+<g id="edge23" class="edge" data-name="RafflePool.depositStEth-&gt;RafflePool.RafflePool__StEthTransferFailed" data-comment="RafflePool.depositStEth-&gt;RafflePool.RafflePool__InsufficientAllowance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M481.6,-488.75C529.12,-481.61 599.26,-471.06 657.99,-462.23"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="658.36,-465.72 667.73,-460.77 657.32,-458.79 658.36,-465.72"/>
+</g>
+<!-- RafflePool.RafflePool__StEthTransferFailed -->
+<g id="node41" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__StEthTransferFailed">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-446" rx="140.68" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-441.8" font-family="Times,serif" font-size="14.00">RafflePool__StEthTransferFailed</text>
+</g><g id="edge19" class="edge" data-name="RafflePool.depositStEth-&gt;IERC20Permit.balanceOf" data-comment="RafflePool.RafflePool__StEthTransferFailed">
+
+<path fill="none" stroke="white" stroke-width="2" d="M486.17,-493.55C516.03,-491.41 550.24,-484.27 571.36,-461 632.69,-393.44 545.51,-119.07 607.36,-52 633.93,-23.2 679,-17.85 714.32,-20.39"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="713.53,-23.83 723.83,-21.35 714.23,-16.86 713.53,-23.83"/>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;RafflePool.RafflePool__StEthTransferFailed -->
+
+<!-- RafflePool.depositStEth&#45;&gt;IERC20Permit.balanceOf -->
+
+<!-- RafflePool.depositStEth&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge14" class="edge" data-name="RafflePool.depositStEth-&gt;IERC20Permit.allowance" data-comment="RafflePool.depositStEth-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M485.68,-501.45C515.59,-500.32 550,-493.22 571.36,-470 625.04,-411.64 553.22,-172.93 607.36,-115 631.69,-88.97 671.16,-82.18 704.64,-81.91"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="704.52,-85.41 714.57,-82.07 704.63,-78.41 704.52,-85.41"/>
+</g><g id="edge24" class="edge" data-name="RafflePool.depositStEth-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M473.74,-509.21C506.02,-511.12 547.24,-505.58 571.36,-479 632.69,-411.44 545.51,-137.07 607.36,-70 630.94,-44.44 669.08,-37.35 702.06,-35.78" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="701.95,-39.29 711.85,-35.51 701.75,-32.29 701.95,-39.29"/>
+</g>
+<!-- IERC20Permit.allowance -->
+<g id="node49" class="node" pointer-events="visible" data-name="IERC20Permit.allowance">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-88" rx="50.36" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-83.8" font-family="Times,serif" font-size="14.00">allowance</text>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;IERC20Permit.allowance -->
+<g id="edge21" class="edge" data-name="RafflePool.depositStEth-&gt;IERC20Permit.transferFrom" data-comment="RafflePool.depositStEth-&gt;IERC20Permit.allowance">
+
+<path fill="none" stroke="white" stroke-width="2" d="M485.88,-501.28C515.65,-500.06 549.88,-492.94 571.36,-470 663.46,-371.66 514.49,-266.6 607.36,-169 629.35,-145.89 663.28,-138.03 694.12,-136.41"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="694.18,-139.91 704.08,-136.15 693.99,-132.91 694.18,-139.91"/>
+</g>
+<!-- IERC20Permit.transferFrom -->
+<g id="node50" class="node" pointer-events="visible" data-name="IERC20Permit.transferFrom">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-142" rx="61.41" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-137.8" font-family="Times,serif" font-size="14.00">transferFrom</text>
+</g>
+<!-- RafflePool.depositStEth&#45;&gt;IERC20Permit.transferFrom -->
+<g id="edge29" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool._addUser" data-comment="RafflePool.depositStEth-&gt;IERC20Permit.transferFrom">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M508.4,-592.72C570.12,-583.44 653.3,-570.94 708.23,-562.68"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="708.51,-566.18 717.87,-561.23 707.46,-559.26 708.51,-566.18"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit -->
+<g id="node5" class="node" pointer-events="visible" data-name="RafflePool.depositStEthWithPermit">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-605" rx="105.41" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-600.8" font-family="Times,serif" font-size="14.00">depositStEthWithPermit</text>
+</g><g id="edge39" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool._addBalance" data-comment="RafflePool.depositStEthWithPermit">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M532.19,-605.93C584.11,-606.39 645.43,-606.93 692.24,-607.35"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="691.98,-610.85 702.01,-607.43 692.04,-603.85 691.98,-610.85"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool._addUser -->
+<g id="edge40" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool._updateBalanceLogs" data-comment="RafflePool.depositStEthWithPermit-&gt;RafflePool._addUser">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M465.73,-622.98C494.87,-636.42 535.64,-655.29 571.36,-672 587.39,-679.5 590.49,-683.69 607.36,-689 628.08,-695.52 650.84,-700.57 672.49,-704.44"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="671.66,-707.85 682.1,-706.08 672.83,-700.95 671.66,-707.85"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool._addBalance -->
+<g id="edge28" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool._checkRaffleState" data-comment="RafflePool.depositStEthWithPermit-&gt;RafflePool._addBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M504.54,-618.08C558.97,-627.22 631.43,-639.4 686.26,-648.61"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="685.66,-652.06 696.1,-650.26 686.82,-645.15 685.66,-652.06"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool._updateBalanceLogs -->
+<g id="edge31" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool.address" data-comment="RafflePool.depositStEthWithPermit-&gt;RafflePool._updateBalanceLogs">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M454.26,-586.26C485.14,-578.48 535.56,-573.97 571.36,-551 594.72,-536.02 583.89,-514.79 607.36,-500 646.79,-475.15 702.2,-471.22 736.01,-478.98"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="734.76,-482.26 745.34,-481.79 736.78,-475.55 734.76,-482.26"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool._checkRaffleState -->
+
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool.address -->
+
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool.address -->
+<g id="edge33" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M507.39,-592.43C529.43,-588.12 552.44,-581.14 571.36,-569 594.72,-554.02 583.89,-532.79 607.36,-518 640.12,-497.36 683.89,-491.15 717.16,-491.23" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="716.68,-494.72 726.78,-491.49 716.87,-487.72 716.68,-494.72"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool.address -->
+<g id="edge36" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool.RafflePool__StEthTransferFailed" data-comment="RafflePool.depositStEthWithPermit-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M528.63,-600.04C544.24,-595.5 559.18,-588.52 571.36,-578 608.7,-545.75 569.78,-504.95 607.36,-473 613.44,-467.84 620.12,-463.49 627.22,-459.84"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="628.63,-463.04 636.31,-455.75 625.76,-456.66 628.63,-463.04"/>
+</g><g id="edge35" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M532.33,-604.14C546.11,-600.16 559.54,-594.59 571.36,-587 594.72,-572.02 583.89,-550.79 607.36,-536 639.39,-515.82 681.95,-509.44 714.92,-506.57" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="714.78,-510.09 724.48,-505.82 714.24,-503.11 714.78,-510.09"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool.address --><!-- RafflePool.depositStEthWithPermit&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge30" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M521.53,-596.46C540.45,-591.76 558.45,-583.5 571.36,-569 647.98,-483.02 530.06,-137.37 607.36,-52 633.66,-22.96 678.76,-17.63 714.16,-20.24"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="713.4,-23.68 723.7,-21.22 714.11,-16.72 713.4,-23.68"/>
+</g><g id="edge38" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;RafflePool.address" data-comment="RafflePool.depositStEthWithPermit-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M448.92,-624C479.03,-632.95 533.41,-629.35 571.36,-605 594.72,-590.02 583.89,-568.79 607.36,-554 645.02,-530.27 697.25,-525.62 731.32,-518.98" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="731.9,-522.44 740.9,-516.84 730.37,-515.6 731.9,-522.44"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;RafflePool.RafflePool__StEthTransferFailed --><!-- RafflePool.depositStEthWithPermit&#45;&gt;IERC20Permit.balanceOf -->
+
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;IERC20Permit.transferFrom -->
+<g id="edge34" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;IERC20Permit.transferFrom">
+
+<path fill="none" stroke="white" stroke-width="2" d="M531.31,-602.31C546.52,-597.48 560.63,-589.82 571.36,-578 632.69,-510.44 545.51,-236.07 607.36,-169 629.25,-145.27 663.7,-137.46 694.91,-136.04"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="694.63,-139.54 704.56,-135.85 694.49,-132.55 694.63,-139.54"/>
+</g>
+<!-- IERC20Permit.permit -->
+<g id="node51" class="node" pointer-events="visible" data-name="IERC20Permit.permit">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-196" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-191.8" font-family="Times,serif" font-size="14.00">permit</text>
+</g><g id="edge37" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;IERC20Permit.balanceOf" data-comment="IERC20Permit.permit">
+
+<path fill="none" stroke="white" stroke-width="2" d="M518.91,-614.55C538.78,-610.51 557.85,-602.16 571.36,-587 647.98,-501.02 530.06,-155.37 607.36,-70 630.7,-44.23 668.84,-37.13 701.87,-35.61" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="701.78,-39.12 711.68,-35.35 701.6,-32.12 701.78,-39.12"/>
+</g>
+<!-- RafflePool.depositStEthWithPermit&#45;&gt;IERC20Permit.permit -->
+<g id="edge32" class="edge" data-name="RafflePool.depositStEthWithPermit-&gt;IERC20Permit.permit">
+
+<path fill="none" stroke="white" stroke-width="2" d="M531.18,-602.18C546.4,-597.37 560.55,-589.75 571.36,-578 625.04,-519.64 553.22,-280.93 607.36,-223 634.97,-193.47 682.05,-188.7 717.77,-190.13"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="717.14,-193.6 727.33,-190.72 717.57,-186.61 717.14,-193.6"/>
+</g>
+<!-- RafflePool.withdrawStEth -->
+<g id="node6" class="node" pointer-events="visible" data-name="RafflePool.withdrawStEth">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-827" rx="68.95" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-822.8" font-family="Times,serif" font-size="14.00">withdrawStEth</text>
+</g>
+<!-- RafflePool._subtractBalance -->
+<g id="node14" class="node" pointer-events="visible" data-name="RafflePool._subtractBalance">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-878" rx="77.56" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-873.8" font-family="Times,serif" font-size="14.00">_subtractBalance</text>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;RafflePool._subtractBalance -->
+<g id="edge43" class="edge" data-name="RafflePool.withdrawStEth-&gt;RafflePool._subtractBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M487.75,-836.18C543.41,-844.54 625.98,-856.95 686.71,-866.08"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="685.92,-869.51 696.33,-867.53 686.96,-862.58 685.92,-869.51"/>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;RafflePool._updateBalanceLogs -->
+<g id="edge44" class="edge" data-name="RafflePool.withdrawStEth-&gt;RafflePool._updateBalanceLogs">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M494.19,-822.57C520.04,-818.3 548.73,-810.2 571.36,-795 594.7,-779.33 583.65,-758.1 607.36,-743 623.7,-732.6 642.81,-725.86 662.01,-721.55"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="662.5,-725.01 671.63,-719.64 661.14,-718.15 662.5,-725.01"/>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;RafflePool._checkRaffleState -->
+<g id="edge42" class="edge" data-name="RafflePool.withdrawStEth-&gt;RafflePool._checkRaffleState">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M495.84,-825.76C522.23,-821.97 550.87,-813.36 571.36,-795 608.42,-761.8 569.5,-721.28 607.36,-689 625.3,-673.71 648.64,-665.56 671.88,-661.52"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="672.34,-664.99 681.74,-660.1 671.35,-658.06 672.34,-664.99"/>
+</g>
+<!-- RafflePool.RafflePool__InsufficientStEthBalance -->
+<g id="node42" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__InsufficientStEthBalance">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-932" rx="159.71" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-927.8" font-family="Times,serif" font-size="14.00">RafflePool__InsufficientStEthBalance</text>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;RafflePool.RafflePool__InsufficientStEthBalance -->
+<g id="edge41" class="edge" data-name="RafflePool.withdrawStEth-&gt;RafflePool.RafflePool__InsufficientStEthBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M459.45,-843.98C494.97,-861.71 553.81,-889.13 607.36,-905 620.18,-908.8 633.74,-912.12 647.33,-915.01"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="646.33,-918.38 656.83,-916.94 647.73,-911.52 646.33,-918.38"/>
+</g>
+<!-- RafflePool.RafflePool__WithdrawalFailed -->
+<g id="node43" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__WithdrawalFailed">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-824" rx="132.01" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-819.8" font-family="Times,serif" font-size="14.00">RafflePool__WithdrawalFailed</text>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;RafflePool.RafflePool__WithdrawalFailed -->
+<g id="edge46" class="edge" data-name="RafflePool.withdrawStEth-&gt;RafflePool.RafflePool__WithdrawalFailed">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M495.77,-826.39C531.92,-826.07 577.61,-825.67 621.08,-825.28"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="620.88,-828.78 630.85,-825.19 620.82,-821.78 620.88,-828.78"/>
+</g>
+<!-- IERC20Permit.transfer -->
+<g id="node52" class="node" pointer-events="visible" data-name="IERC20Permit.transfer">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-250" rx="40.55" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-245.8" font-family="Times,serif" font-size="14.00">transfer</text>
+</g>
+<!-- RafflePool.withdrawStEth&#45;&gt;IERC20Permit.transfer -->
+<g id="edge45" class="edge" data-name="RafflePool.withdrawStEth-&gt;IERC20Permit.transfer">
+
+<path fill="none" stroke="white" stroke-width="2" d="M493.31,-821.58C521.77,-815.68 552.68,-803.77 571.36,-780 636.78,-696.77 542.77,-388.87 607.36,-305 632.15,-272.82 676.97,-259.38 712.65,-253.81"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="712.89,-257.31 722.33,-252.5 711.95,-250.37 712.89,-257.31"/>
+</g>
+<!-- RafflePool.performUpkeep -->
+<g id="node7" class="node" pointer-events="visible" data-name="RafflePool.performUpkeep">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-983" rx="72.34" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-978.8" font-family="Times,serif" font-size="14.00">performUpkeep</text>
+</g>
+<!-- RafflePool.checkUpkeep -->
+<g id="node11" class="node" pointer-events="visible" data-name="RafflePool.checkUpkeep">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-443" rx="63.67" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-438.8" font-family="Times,serif" font-size="14.00">checkUpkeep</text>
+</g>
+<!-- RafflePool.performUpkeep&#45;&gt;RafflePool.checkUpkeep -->
+<g id="edge47" class="edge" data-name="RafflePool.performUpkeep-&gt;RafflePool.checkUpkeep">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M202.72,-979.77C218.45,-975.63 233.53,-968.37 244.06,-956 314.25,-873.53 207.83,-550.69 280.06,-470 297.47,-450.54 324.05,-442.32 349.69,-439.46"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="349.85,-442.96 359.54,-438.68 349.29,-435.98 349.85,-442.96"/>
+</g>
+<!-- RafflePool.performUpkeep&#45;&gt;RafflePool.address -->
+<g id="edge49" class="edge" data-name="RafflePool.performUpkeep-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M202.32,-979.42C218.06,-975.29 233.25,-968.12 244.06,-956 333.12,-856.09 183.81,-750.01 280.06,-657 326.78,-611.85 520.16,-671.99 571.36,-632 610.24,-601.63 569.78,-558.95 607.36,-527 636.39,-502.32 679.51,-496.28 713.47,-496.01"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.38,-499.51 723.42,-496.15 713.47,-492.51 713.38,-499.51"/>
+</g>
+<!-- RafflePool.RafflePool__UpkeepNotNeeded -->
+<g id="node44" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__UpkeepNotNeeded">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-551" rx="136.58" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-546.8" font-family="Times,serif" font-size="14.00">RafflePool__UpkeepNotNeeded</text>
+</g>
+<!-- RafflePool.performUpkeep&#45;&gt;RafflePool.RafflePool__UpkeepNotNeeded -->
+<g id="edge50" class="edge" data-name="RafflePool.performUpkeep-&gt;RafflePool.RafflePool__UpkeepNotNeeded">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M202.53,-979.61C218.27,-975.47 233.4,-968.26 244.06,-956 299.42,-892.32 223.12,-640.28 280.06,-578 284.04,-573.64 288.49,-569.85 293.28,-566.55"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="294.8,-569.72 301.66,-561.65 291.26,-563.68 294.8,-569.72"/>
+</g>
+<!-- RafflePool.performUpkeep&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge48" class="edge" data-name="RafflePool.performUpkeep-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M202.88,-979.9C218.6,-975.76 233.64,-968.46 244.06,-956 336.51,-845.31 181.04,-412.86 280.06,-308 369.51,-213.26 476.78,-364.62 571.36,-275 641.37,-208.66 539.23,-129.27 607.36,-61 632.19,-36.13 670.91,-29.18 703.89,-28.55"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="703.62,-32.05 713.64,-28.59 703.65,-25.05 703.62,-32.05"/>
+</g>
+<!-- VRFCoordinatorV2Interface.requestRandomWords -->
+<g id="node53" class="node" pointer-events="visible" data-name="VRFCoordinatorV2Interface.requestRandomWords">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-220" rx="97.29" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-215.8" font-family="Times,serif" font-size="14.00">requestRandomWords</text>
+</g>
+<!-- RafflePool.performUpkeep&#45;&gt;VRFCoordinatorV2Interface.requestRandomWords -->
+<g id="edge51" class="edge" data-name="RafflePool.performUpkeep-&gt;VRFCoordinatorV2Interface.requestRandomWords">
+
+<path fill="none" stroke="white" stroke-width="2" d="M202.9,-979.92C218.63,-975.78 233.66,-968.48 244.06,-956 341.05,-839.56 190.76,-397.44 280.06,-275 293.55,-256.5 314.1,-244.22 335.51,-236.07"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="336.62,-239.39 344.94,-232.83 334.34,-232.77 336.62,-239.39"/>
+</g>
+<!-- RafflePool.withdrawPlatformFee -->
+<g id="node8" class="node" pointer-events="visible" data-name="RafflePool.withdrawPlatformFee">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-753" rx="95.49" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-748.8" font-family="Times,serif" font-size="14.00">withdrawPlatformFee</text>
+</g>
+<!-- RafflePool.withdrawPlatformFee&#45;&gt;RafflePool.RafflePool__WithdrawalFailed -->
+<g id="edge53" class="edge" data-name="RafflePool.withdrawPlatformFee-&gt;RafflePool.RafflePool__WithdrawalFailed">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M485.05,-768.31C520.32,-777.29 566.27,-788.51 607.36,-797 625.37,-800.72 644.59,-804.31 663.23,-807.6"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="662.58,-811.03 673.03,-809.3 663.78,-804.14 662.58,-811.03"/>
+</g>
+<!-- RafflePool.withdrawPlatformFee&#45;&gt;IERC20Permit.transfer -->
+<g id="edge52" class="edge" data-name="RafflePool.withdrawPlatformFee-&gt;IERC20Permit.transfer">
+
+<path fill="none" stroke="white" stroke-width="2" d="M522.48,-752.81C541,-748.29 558.59,-740.11 571.36,-726 634.38,-656.39 549.71,-379.11 607.36,-305 632.31,-272.94 677.11,-259.48 712.75,-253.88"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="712.97,-257.38 722.41,-252.56 712.03,-250.45 712.97,-257.38"/>
+</g>
+<!-- RafflePool.adjustPlatformFee -->
+<g id="node9" class="node" pointer-events="visible" data-name="RafflePool.adjustPlatformFee">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-1091" rx="81.68" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-1086.8" font-family="Times,serif" font-size="14.00">adjustPlatformFee</text>
+</g>
+<!-- RafflePool._adjustPlatformFee -->
+<g id="node16" class="node" pointer-events="visible" data-name="RafflePool._adjustPlatformFee">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-1045" rx="86.84" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-1040.8" font-family="Times,serif" font-size="14.00">_adjustPlatformFee</text>
+</g>
+<!-- RafflePool.adjustPlatformFee&#45;&gt;RafflePool._adjustPlatformFee -->
+<g id="edge54" class="edge" data-name="RafflePool.adjustPlatformFee-&gt;RafflePool._adjustPlatformFee">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M199.14,-1080.33C241.34,-1073.72 295.84,-1065.18 340.7,-1058.16"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="341.06,-1061.65 350.39,-1056.64 339.97,-1054.73 341.06,-1061.65"/>
+</g>
+<!-- RafflePool.updateStakingRewards -->
+<g id="node10" class="node" pointer-events="visible" data-name="RafflePool.updateStakingRewards">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-389" rx="100.15" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-384.8" font-family="Times,serif" font-size="14.00">updateStakingRewards</text>
+</g>
+<!-- RafflePool.updateStakingRewards&#45;&gt;RafflePool.address -->
+<g id="edge56" class="edge" data-name="RafflePool.updateStakingRewards-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M521.77,-395.24C539.29,-399.49 556.67,-406.03 571.36,-416 596.16,-432.82 582.43,-456.38 607.36,-473 638.45,-493.72 680.34,-500.16 713.27,-501.59"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="712.75,-505.07 722.84,-501.83 712.93,-498.08 712.75,-505.07"/>
+</g>
+<!-- RafflePool.updateStakingRewards&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge55" class="edge" data-name="RafflePool.updateStakingRewards-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M526.58,-387.32C543.48,-382.64 559.4,-374.77 571.36,-362 663.46,-263.66 514.49,-158.6 607.36,-61 631.76,-35.37 670.85,-28.49 704.12,-28.09"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="703.94,-31.58 713.98,-28.2 704.02,-24.58 703.94,-31.58"/>
+</g>
+<!-- RafflePool.checkUpkeep&#45;&gt;RafflePool.address -->
+<g id="edge58" class="edge" data-name="RafflePool.checkUpkeep-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M482.73,-452.41C547.39,-463.28 652.81,-480.99 715.17,-491.47"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="714.37,-494.88 724.81,-493.08 715.53,-487.98 714.37,-494.88"/>
+</g>
+<!-- RafflePool.checkUpkeep&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge57" class="edge" data-name="RafflePool.checkUpkeep-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M488.97,-447.3C518.08,-445.78 550.78,-438.38 571.36,-416 625.04,-357.64 553.22,-118.93 607.36,-61 631.61,-35.06 670.89,-28.22 704.29,-27.92"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="704.15,-31.41 714.2,-28.06 704.26,-24.41 704.15,-31.41"/>
+</g>
+<!-- RafflePool.RafflePool__ExceedsMaxProtocolFee -->
+<g id="node45" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__ExceedsMaxProtocolFee">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-1060" rx="159.15" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-1055.8" font-family="Times,serif" font-size="14.00">RafflePool__ExceedsMaxProtocolFee</text>
+</g>
+<!-- RafflePool._adjustPlatformFee&#45;&gt;RafflePool.RafflePool__ExceedsMaxProtocolFee -->
+<g id="edge59" class="edge" data-name="RafflePool._adjustPlatformFee-&gt;RafflePool.RafflePool__ExceedsMaxProtocolFee">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M512.32,-1048.79C540.01,-1050.01 571.7,-1051.41 603.08,-1052.8"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="602.85,-1056.29 612.99,-1053.24 603.16,-1049.3 602.85,-1056.29"/>
+</g>
+<!-- RafflePool.fulfillRandomWords -->
+<g id="node17" class="node" pointer-events="visible" data-name="RafflePool.fulfillRandomWords">
+
+<ellipse fill="#f2c383" stroke="#f2c383" stroke-width="3" cx="130.03" cy="-1037" rx="91.5" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-1032.8" font-family="Times,serif" font-size="14.00">fulfillRandomWords</text>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool._addBalance -->
+<g id="edge66" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool._addBalance">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M214.64,-1028.96C225.7,-1024.7 235.99,-1018.61 244.06,-1010 308.81,-940.91 209.8,-863.49 280.06,-800 328.2,-756.5 521.65,-821.7 571.36,-780 622.24,-737.33 558.69,-680.17 607.36,-635 630.39,-613.64 663.78,-605.83 694,-603.8"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="693.84,-607.31 703.69,-603.38 693.55,-600.31 693.84,-607.31"/>
+</g>
+<!-- RafflePool._calculateTwab -->
+<g id="node18" class="node" pointer-events="visible" data-name="RafflePool._calculateTwab">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-937" rx="72.32" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-932.8" font-family="Times,serif" font-size="14.00">_calculateTwab</text>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool._calculateTwab -->
+<g id="edge60" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool._calculateTwab">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M189.77,-1022.14C208.2,-1017.74 227.93,-1011.35 244.06,-1001 265.9,-986.98 257.87,-968.47 280.06,-955 298.68,-943.69 320.95,-936.92 342.37,-933.26"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="342.81,-936.73 352.2,-931.83 341.8,-929.8 342.81,-936.73"/>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool._calculateTwab -->
+
+<!-- RafflePool._cleanupUsers -->
+<g id="node21" class="node" pointer-events="visible" data-name="RafflePool._cleanupUsers">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="425.71" cy="-991" rx="67.77" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-986.8" font-family="Times,serif" font-size="14.00">_cleanupUsers</text>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool._cleanupUsers -->
+<g id="edge65" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool._cleanupUsers">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M204.76,-1025.45C250.01,-1018.36 307.7,-1009.33 352.65,-1002.29"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="352.93,-1005.79 362.27,-1000.78 351.85,-998.87 352.93,-1005.79"/>
+</g><g id="edge63" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool._calculateTwab" data-comment="RafflePool.fulfillRandomWords-&gt;RafflePool._cleanupUsers">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M218.65,-1031.37C227.59,-1028.1 236.25,-1024.01 244.06,-1019 265.9,-1004.98 257.87,-986.47 280.06,-973 300.97,-960.3 326.49,-953.32 350.23,-949.1" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="350.52,-952.59 359.84,-947.55 349.41,-945.68 350.52,-952.59"/>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool.address -->
+<g id="edge61" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M182.18,-1020.94C204.37,-1016.64 228.74,-1009.42 244.06,-992 293.93,-935.27 225.92,-706.68 280.06,-654 326.6,-608.71 520.93,-671.9 571.36,-631 615.28,-595.39 565.09,-546.54 607.36,-509 640.33,-479.72 692.93,-476.28 728.43,-482.17"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="727.65,-485.58 738.16,-484.22 729.1,-478.73 727.65,-485.58"/>
+</g>
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool.address -->
+
+<!-- RafflePool.fulfillRandomWords&#45;&gt;RafflePool.address -->
+
+<!-- RafflePool._findPrecedingTimestampIndex -->
+<g id="node19" class="node" pointer-events="visible" data-name="RafflePool._findPrecedingTimestampIndex">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="766.97" cy="-1006" rx="135.44" ry="18"/>
+<text text-anchor="middle" x="766.97" y="-1001.8" font-family="Times,serif" font-size="14.00">_findPrecedingTimestampIndex</text>
+</g><g id="edge62" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool.address" data-comment="RafflePool._findPrecedingTimestampIndex">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M215.41,-1029.3C226.3,-1024.98 236.33,-1018.79 244.06,-1010 293.93,-953.27 225.92,-724.68 280.06,-672 326.6,-626.71 520.93,-689.9 571.36,-649 615.28,-613.39 565.09,-564.54 607.36,-527 636.07,-501.51 679.67,-495.6 713.89,-495.61" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.41,-499.1 723.48,-495.8 713.55,-492.1 713.41,-499.1"/>
+</g>
+<!-- RafflePool._calculateTwab&#45;&gt;RafflePool._findPrecedingTimestampIndex -->
+<g id="edge68" class="edge" data-name="RafflePool._calculateTwab-&gt;RafflePool._findPrecedingTimestampIndex">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M488.19,-947.26C513.99,-951.88 544.24,-957.71 571.36,-964 587.54,-967.75 591.21,-970.13 607.36,-974 627.93,-978.93 650.13,-983.72 671.2,-988.04"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="670.35,-991.44 680.85,-989.99 671.74,-984.58 670.35,-991.44"/>
+</g><g id="edge64" class="edge" data-name="RafflePool.fulfillRandomWords-&gt;RafflePool.address" data-comment="RafflePool._calculateTwab-&gt;RafflePool._findPrecedingTimestampIndex">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M177.02,-1053.81C200.5,-1053.71 227.54,-1046.79 244.06,-1028 293.93,-971.27 225.92,-742.68 280.06,-690 326.6,-644.71 520.93,-707.9 571.36,-667 615.28,-631.39 565.09,-582.54 607.36,-545 637.27,-518.44 683.35,-513.14 718.15,-510.49" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="718.14,-514 727.86,-509.78 717.63,-507.01 718.14,-514"/>
+</g>
+<!-- RafflePool._calculateTwab&#45;&gt;RafflePool.address -->
+<g id="edge67" class="edge" data-name="RafflePool._calculateTwab-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M474.52,-922.48C507.39,-909.86 549,-888.15 571.36,-854 611.41,-792.84 557.22,-580.19 607.36,-527 634.21,-498.53 679.17,-493.13 714.39,-494.08"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="714.16,-497.58 724.32,-494.57 714.51,-490.58 714.16,-497.58"/>
+</g>
+<!-- RafflePool.type -->
+<g id="node46" class="node" pointer-events="visible" data-name="RafflePool.type">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="1111.99" cy="-969" rx="27.83" ry="18"/>
+<text text-anchor="middle" x="1111.99" y="-964.8" font-family="Times,serif" font-size="14.00">type</text>
+</g>
+<!-- RafflePool._calculateTwab&#45;&gt;RafflePool.type -->
+<g id="edge69" class="edge" data-name="RafflePool._calculateTwab-&gt;RafflePool.type">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M498.63,-939.25C531.68,-942.82 571.43,-947.46 607.36,-950 779.22,-962.14 984.81,-961.52 1070.45,-964.69"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="1070.21,-968.18 1080.35,-965.11 1070.51,-961.19 1070.21,-968.18"/>
+</g>
+<!-- RafflePool._calculateTwab&#45;&gt;RafflePool.type -->
+
+<!-- RafflePool._findPrecedingTimestampIndex&#45;&gt;RafflePool.type -->
+<g id="edge71" class="edge" data-name="RafflePool._findPrecedingTimestampIndex-&gt;RafflePool.type">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M876.03,-994.34C942.13,-987.21 1022.86,-978.51 1070.42,-973.38"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="1070.63,-976.87 1080.19,-972.32 1069.88,-969.91 1070.63,-976.87"/>
+</g>
+<!-- RafflePool.RafflePool__RaffleDrawInProgress -->
+<g id="node47" class="node" pointer-events="visible" data-name="RafflePool.RafflePool__RaffleDrawInProgress">
+
+<ellipse fill="#edad56" stroke="#edad56" stroke-width="3" cx="1111.99" cy="-662" rx="149.33" ry="18"/>
+<text text-anchor="middle" x="1111.99" y="-657.8" font-family="Times,serif" font-size="14.00">RafflePool__RaffleDrawInProgress</text>
+</g><g id="edge70" class="edge" data-name="RafflePool._calculateTwab-&gt;RafflePool.type" data-comment="RafflePool.RafflePool__RaffleDrawInProgress">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M474.51,-951.58C510.85,-958.28 562.14,-964.81 607.36,-968 779.42,-980.15 985.31,-979.52 1070.76,-974.47" style=""/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="1070.89,-977.97 1080.63,-973.8 1070.42,-970.98 1070.89,-977.97"/>
+</g>
+<!-- RafflePool._checkRaffleState&#45;&gt;RafflePool.RafflePool__RaffleDrawInProgress -->
+<g id="edge72" class="edge" data-name="RafflePool._checkRaffleState-&gt;RafflePool.RafflePool__RaffleDrawInProgress">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M849.7,-662C879.52,-662 914.4,-662 948.77,-662"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="948.37,-665.5 958.37,-662 948.37,-658.5 948.37,-665.5"/>
+</g>
+<!-- RafflePool.getTotalBalance -->
+<g id="node22" class="node" pointer-events="visible" data-name="RafflePool.getTotalBalance">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="425.71" cy="-335" rx="74.12" ry="18"/>
+<text text-anchor="middle" x="425.71" y="-330.8" font-family="Times,serif" font-size="14.00">getTotalBalance</text>
+</g>
+<!-- RafflePool.getTotalBalance&#45;&gt;RafflePool.address -->
+<g id="edge74" class="edge" data-name="RafflePool.getTotalBalance-&gt;RafflePool.address">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M501.01,-334.07C525.9,-337.33 552.17,-345.14 571.36,-362 610.33,-396.23 568.13,-439.08 607.36,-473 636.18,-497.92 679.32,-503.95 713.33,-504.14"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="713.37,-507.64 723.31,-503.99 713.26,-500.64 713.37,-507.64"/>
+</g>
+<!-- RafflePool.getTotalBalance&#45;&gt;IERC20Permit.balanceOf -->
+<g id="edge73" class="edge" data-name="RafflePool.getTotalBalance-&gt;IERC20Permit.balanceOf">
+
+<path fill="none" stroke="white" stroke-width="2" d="M500.97,-335.08C526.61,-331.25 553.39,-322.28 571.36,-303 645.52,-223.47 531.28,-138.69 607.36,-61 632.04,-35.81 670.94,-28.89 704.05,-28.36"/>
+<polygon fill="white" stroke="white" stroke-width="2" points="703.83,-31.86 713.85,-28.43 703.88,-24.86 703.83,-31.86"/>
+</g>
+<!-- RafflePool.getUserDeposit -->
+<g id="node23" class="node" pointer-events="visible" data-name="RafflePool.getUserDeposit">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-929" rx="71.22" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-924.8" font-family="Times,serif" font-size="14.00">getUserDeposit</text>
+</g>
+<!-- RafflePool.getTotalUserDeposits -->
+<g id="node24" class="node" pointer-events="visible" data-name="RafflePool.getTotalUserDeposits">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-875" rx="95.49" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-870.8" font-family="Times,serif" font-size="14.00">getTotalUserDeposits</text>
+</g>
+<!-- RafflePool.getStakingRewardsTotal -->
+<g id="node25" class="node" pointer-events="visible" data-name="RafflePool.getStakingRewardsTotal">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-821" rx="106.52" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-816.8" font-family="Times,serif" font-size="14.00">getStakingRewardsTotal</text>
+</g>
+<!-- RafflePool.getRaffleState -->
+<g id="node26" class="node" pointer-events="visible" data-name="RafflePool.getRaffleState">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-767" rx="66.04" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-762.8" font-family="Times,serif" font-size="14.00">getRaffleState</text>
+</g>
+<!-- RafflePool.getActiveDepositorsCount -->
+<g id="node27" class="node" pointer-events="visible" data-name="RafflePool.getActiveDepositorsCount">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-713" rx="114.06" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-708.8" font-family="Times,serif" font-size="14.00">getActiveDepositorsCount</text>
+</g>
+<!-- RafflePool.getRecentWinner -->
+<g id="node28" class="node" pointer-events="visible" data-name="RafflePool.getRecentWinner">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-659" rx="78.7" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-654.8" font-family="Times,serif" font-size="14.00">getRecentWinner</text>
+</g>
+<!-- RafflePool.getLastTimestamp -->
+<g id="node29" class="node" pointer-events="visible" data-name="RafflePool.getLastTimestamp">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-605" rx="82.81" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-600.8" font-family="Times,serif" font-size="14.00">getLastTimestamp</text>
+</g>
+<!-- RafflePool.getInterval -->
+<g id="node30" class="node" pointer-events="visible" data-name="RafflePool.getInterval">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-551" rx="52.72" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-546.8" font-family="Times,serif" font-size="14.00">getInterval</text>
+</g>
+<!-- RafflePool.getPlatformFee -->
+<g id="node31" class="node" pointer-events="visible" data-name="RafflePool.getPlatformFee">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-497" rx="70.64" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-492.8" font-family="Times,serif" font-size="14.00">getPlatformFee</text>
+</g>
+<!-- RafflePool.getPlatformFeeBalance -->
+<g id="node32" class="node" pointer-events="visible" data-name="RafflePool.getPlatformFeeBalance">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-443" rx="101.84" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-438.8" font-family="Times,serif" font-size="14.00">getPlatformFeeBalance</text>
+</g>
+<!-- RafflePool.getLastUserBalanceLog -->
+<g id="node33" class="node" pointer-events="visible" data-name="RafflePool.getLastUserBalanceLog">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-389" rx="104.2" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-384.8" font-family="Times,serif" font-size="14.00">getLastUserBalanceLog</text>
+</g>
+<!-- RafflePool.getLastTotalBalanceLog -->
+<g id="node34" class="node" pointer-events="visible" data-name="RafflePool.getLastTotalBalanceLog">
+
+<ellipse fill="#ffbdb9" stroke="#ffbdb9" stroke-width="3" cx="130.03" cy="-335" rx="106.49" ry="18"/>
+<text text-anchor="middle" x="130.03" y="-330.8" font-family="Times,serif" font-size="14.00">getLastTotalBalanceLog</text>
+</g>
+<!-- key -->
+<g id="node54" class="node" pointer-events="visible" data-name="key">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="195.03,-1362 65.03,-1362 65.03,-1274 195.03,-1274 195.03,-1362"/>
+<text text-anchor="start" x="114.67" y="-1343.4" font-family="Times,serif" font-size="14.00">Internal Call</text>
+<text text-anchor="start" x="110.78" y="-1323.4" font-family="Times,serif" font-size="14.00">External Call</text>
+<text text-anchor="start" x="88.23" y="-1303.4" font-family="Times,serif" font-size="14.00">Defined Contract</text>
+<text text-anchor="start" x="74.63" y="-1283.4" font-family="Times,serif" font-size="14.00">Undefined Contract</text>
+</g>
+<!-- key2 -->
+<g id="node55" class="node" pointer-events="visible" data-name="key2">
+
+<polygon fill="#edad56" stroke="none" stroke-width="3" points="452.71,-1362 398.71,-1362 398.71,-1274 452.71,-1274 452.71,-1362"/>
+<text text-anchor="start" x="415.71" y="-1343.4" font-family="Times,serif" font-size="14.00">   </text>
+<text text-anchor="start" x="415.71" y="-1323.4" font-family="Times,serif" font-size="14.00">   </text>
+<polygon fill="#445773" stroke="none" points="413.71,-1298 413.71,-1318 438.71,-1318 438.71,-1298 413.71,-1298"/>
+<text text-anchor="start" x="415.71" y="-1303.4" font-family="Times,serif" font-size="14.00">   </text>
+<polygon fill="none" stroke="#e8726d" points="415.71,-1280 415.71,-1296 436.71,-1296 436.71,-1280 415.71,-1280"/>
+</g>
+<!-- key&#45;&gt;key2 -->
+
+<g id="edge75" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="#1bc6a6" stroke-width="2" d="M188.03,-1348C283.4,-1348 310.46,-1348 399.69,-1348"/>
+<polygon fill="#1bc6a6" stroke="#1bc6a6" stroke-width="2" points="399.68,-1351.5 409.68,-1348 399.68,-1344.5 399.68,-1351.5"/>
+</g>
+
+<!-- key&#45;&gt;key2 -->
+
+
+<g id="edge76" class="edge" data-name="key-&gt;key2">
+
+<path fill="none" stroke="white" stroke-width="2" d="M188.03,-1328C283.4,-1328 310.46,-1328 399.69,-1328" style=""/>
+<polygon fill="white" stroke="white" stroke-width="2" points="399.68,-1331.5 409.68,-1328 399.68,-1324.5 399.68,-1331.5"/>
+</g>
+</g>
+</svg>

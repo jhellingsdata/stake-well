@@ -11,7 +11,7 @@ out = 'contracts/out'
 libs = ['contracts/lib', 'contracts/lib/openzeppelin-contracts/contracts']
 cache_path = 'contracts/cache'
 auto_detect_remappings = true
-gas_reports = ["RafflePool"]
+gas_reports = ["RafflePool", "DonationFactory", "DonationPool"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 # solc = '0.8.20'
 
@@ -28,6 +28,9 @@ runs = 10000               # the number of fuzz runs for tests
 max_local_rejects = 66000 # max number of individual inputs that may be rejected before the test aborts
 max_test_rejects = 1      # max number of tests that may be rejected before the test aborts      
 
+[invariant]
+runs = 1000
+depth = 100
 
 [fmt]
 # `forge fmt` defaults with line_length reduced from 120 to 80
