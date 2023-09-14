@@ -10,6 +10,8 @@ contract DonationFactory {
     // Errors
     ///////////////////
     error DonationFactory__NotAuthorisedToCreate();
+    error DonationFactory__WithdrawalFailed();
+    error DonationFactory__ExceedsMaxProtocolFee();
 
     ///////////////////
     // Type Declarations
@@ -20,8 +22,10 @@ contract DonationFactory {
     ///////////////////
     IERC20Permit private immutable i_stETH;
     address private immutable i_owner;
-    mapping(address => bool) public isDonationPool;
-    DonationPool[] private donationPools;
+    mapping(address => uint256) public donationPoolIndex;
+    DonationPool[] private s_donationPools;
+    uint256 private s_platformFee;
+    uint256 private s_platformFeeBalance;
 
     ///////////////////
     // Events
@@ -29,6 +33,8 @@ contract DonationFactory {
     event DonationPoolCreated(
         address indexed donationPool, address indexed beneficiary, uint256 indexed poolIndex, string title
     );
+    event ProtocolFeeWithdrawn(uint256 amount);
+    event ProtocolFeeAdjusted(uint256 newFee);
 
     ///////////////////
     // Modifiers    //
@@ -43,35 +49,80 @@ contract DonationFactory {
     ///////////////////
     // Functions     //
     ///////////////////
-    constructor(address steth) {
+    constructor(address steth, uint256 platformFee) {
         i_owner = msg.sender;
         i_stETH = IERC20Permit(steth);
+        s_platformFee = platformFee;
     }
 
     ///////////////////
     // External Functions
     ///////////////////
-    function createDonationPool(address _manager, address _beneficiary, string memory _title) external onlyOwner {
+    function createDonationPool(address _manager, address _beneficiary, string memory _title) external {
         DonationPool newDonationPool = new DonationPool(address(i_stETH), _manager, _beneficiary);
-        donationPools.push(newDonationPool);
-        emit DonationPoolCreated(address(newDonationPool), _beneficiary, donationPools.length - 1, _title);
+        s_donationPools.push(newDonationPool);
+        emit DonationPoolCreated(address(newDonationPool), _beneficiary, s_donationPools.length - 1, _title);
     }
 
     // Set up function(s) to allow creation of a donation pool by someone other than factory owner
     function temporaryAuthorisation() external {}
 
+    function withdrawPlatformFee() external onlyOwner {
+        uint256 platformFeeBalance = s_platformFeeBalance;
+        s_platformFeeBalance = 0;
+        emit ProtocolFeeWithdrawn(platformFeeBalance);
+        bool success = i_stETH.transfer(msg.sender, platformFeeBalance);
+        if (!success) revert DonationFactory__WithdrawalFailed();
+    }
+
+    function adjustPlatformFee(uint256 newFee) external onlyOwner {
+        _adjustPlatformFee(newFee);
+    }
+
+    ///////////////////
+    // Internal Functions
+    ///////////////////
+    function _adjustPlatformFee(uint256 newFee) internal {
+        // fee must be between 0 -> 15%
+        if (newFee > 1500) {
+            revert DonationFactory__ExceedsMaxProtocolFee();
+        }
+        s_platformFee = newFee;
+        emit ProtocolFeeAdjusted(newFee);
+    }
+
     ///////////////////
     // Getter Functions
     ///////////////////
-    // function getCampaignInfo(uint256 _index)
-    //     external
-    //     view
-    //     returns (address, address, address[] memory, uint256, uint256)
-    // {
-    //     return donationPools[_index].getCampaignInfo();
-    // }
+    function getDonationPoolsCount() external view returns (uint256) {
+        return s_donationPools.length;
+    }
 
-    function getCampaignCount() external view returns (uint256) {
-        return donationPools.length;
+    function getDonationPoolAddress(uint256 index) external view returns (address) {
+        return address(s_donationPools[index]);
+    }
+
+    function getDonationPoolIndex(address _donationPool) external view returns (uint256) {
+        return donationPoolIndex[_donationPool];
+    }
+
+    function getDonationPoolBeneficiary(uint256 _index) external view returns (address) {
+        return s_donationPools[_index].getCampaignBeneficiary();
+    }
+
+    function getDonationPoolManager(uint256 _index) external view returns (address) {
+        return s_donationPools[_index].getCampaignManager();
+    }
+
+    function getDonationPoolContributorsCount(uint256 _index) external view returns (uint256) {
+        return s_donationPools[_index].getContributorCount();
+    }
+
+    function getDonationPoolDepositBalance(uint256 _index) external view returns (uint256) {
+        return s_donationPools[_index].getCampaignDepositBalance();
+    }
+
+    function getCampaignRewardsBalance(uint256 _index) external view returns (uint256) {
+        return i_stETH.balanceOf(address(s_donationPools[_index])) - s_donationPools[_index].getCampaignDepositBalance();
     }
 }

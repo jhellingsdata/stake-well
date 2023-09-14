@@ -178,14 +178,10 @@ contract DonationPool is AccessControl, ReentrancyGuard {
         s_campaign.totalDepositBalance += amount;
     }
 
-    function _addShares() internal {}
-
     function _subtractBalance(address userAddress, uint256 amount) internal {
         s_userDeposit[userAddress] -= amount;
         s_campaign.totalDepositBalance -= amount;
     }
-
-    function _subtractShares() internal {}
 
     // This function can be called before updating the s_userDeposit for a deposit operation
     function _addPlayer(address _user) internal {
@@ -219,7 +215,28 @@ contract DonationPool is AccessControl, ReentrancyGuard {
     ///////////////////
     // Getters
     ///////////////////
-    function getCampaignInfo() external view returns (address[] memory) {
-        return s_campaign.contributors;
+
+    function getCampaignManager() external view returns (address) {
+        return s_campaign.manager;
+    }
+
+    function getCampaignBeneficiary() external view returns (address) {
+        return s_campaign.beneficiary;
+    }
+
+    function getContributorCount() external view returns (uint256) {
+        return s_campaign.contributors.length;
+    }
+
+    function getContributorAddress(uint256 index) external view returns (address) {
+        return s_campaign.contributors[index];
+    }
+
+    function getCampaignDepositBalance() external view returns (uint256) {
+        return s_campaign.totalDepositBalance;
+    }
+
+    function getCampaignRewardsBalance() external view returns (uint256) {
+        return i_stETH.balanceOf(address(this)) - s_campaign.totalDepositBalance;
     }
 }
