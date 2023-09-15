@@ -11,7 +11,6 @@ import {DeployRafflePool} from "../../script/DeployRafflePool.s.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {VRFCoordinatorV2Mock} from "../mocks/VRFCoordinatorV2Mock.sol";
 import {RafflePool} from "../../src/RafflePool.sol";
-import {IERC20Permit} from "../../src/interfaces/IERC20Permit.sol";
 import {StEthMock} from "../mocks/StEthToken.sol";
 import {SigUtils} from "../mocks/utils/SigUtils.sol";
 import {InvariantTest} from "../../lib/forge-std/src/InvariantTest.sol";

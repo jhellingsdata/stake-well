@@ -44,7 +44,7 @@ export function RaffleDetails() {
         Number(lastTimestamp),
         raffleInterval,
         false,
-    );
+    ) as number;
     // let displayTimeRemaining
     // let timeRemainingInSeconds
     // if (lastTimestamp) {
