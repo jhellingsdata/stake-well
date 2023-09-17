@@ -134,10 +134,7 @@ export function CreateCampaign() {
                     <CustomButton
                         title="Create Campaign"
                         containerStyles="w-full rounded-xl mt-2 bg-gradient-to-tl from-violet-500 to-violet-600 text-white tracking-wide"
-                        handleClick={(e) => {
-                            e.preventDefault(); // stops page refresh
-                            write?.();
-                        }}
+                        handleClick={handleSubmit}
                         disabled={
                             !isAddressValid.manager ||
                             !isAddressValid.beneficiary ||
